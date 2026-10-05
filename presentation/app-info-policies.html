@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certificate &amp; Results Management System · One-Page Info &amp; Policies</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #0f172a;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm 9mm;
+    background: #fff;
+  }
+  @page { size: A4 portrait; margin: 0; }
+
+  .doc { width: 100%; }
+  .head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px 6px;
+    border-bottom: 3px solid #2563eb;
+    margin-bottom: 7px;
+  }
+  .head .uni { font-size: 20px; font-weight: 800; letter-spacing: .4px; }
+  .head .sub { font-size: 11px; color: #4b5563; margin-top: 2px; }
+  .head .tag {
+    text-align: right; font-size: 10px; font-weight: 700; color: #2563eb;
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  h2 {
+    font-size: 12.5px; font-weight: 800; color: #2563eb; text-transform: uppercase;
+    letter-spacing: .8px; margin: 0 0 5px;
+    padding-bottom: 3px; border-bottom: 1px solid #e2e8f0;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+  .blk { border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 9px; }
+  .p { font-size: 9.6px; line-height: 1.5; color: #334155; }
+  ul.t { list-style: none; }
+  ul.t li { font-size: 9.4px; line-height: 1.45; color: #334155; padding-left: 11px; position: relative; margin-bottom: 2.5px; }
+  ul.t li::before { content: "▸"; position: absolute; left: 0; color: #2563eb; }
+  ul.t strong { color: #0f172a; }
+  .feat { font-size: 9.4px; line-height: 1.4; color: #334155; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; }
+  .feat b { color: #0f172a; display: block; font-size: 9.8px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .step { border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 8px; text-align: center; font-size: 9.3px; color: #334155; line-height: 1.4; }
+  .step b { color: #0f172a; display: block; font-size: 9.8px; margin: 2px 0; }
+  .step .n { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; margin-bottom: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.2px; }
+  table th { text-align: left; color: #475569; font-size: 8.8px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e2e8f0; padding: 3px 6px; }
+  table td { border-bottom: 1px solid #f1f5f9; padding: 3px 6px; color: #334155; vertical-align: top; }
+  .chip { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 4px; padding: 0 6px; font-weight: 600; font-size: 8.8px; }
+  .sec { margin-bottom: 7px; }
+  .fmt { font-size: 9.3px; color: #334155; line-height: 1.5; }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 5px; border-top: 1px solid #e2e8f0; font-size: 9px; color: #64748b; }
+  .badges span { display: inline-block; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 6px; margin: 0 2px 2px 0; font-size: 8.6px; color: #475569; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="head">
+    <div>
+      <div class="uni">🎓 Certificate &amp; Results Management System</div>
+      <div class="sub">Official Records Office · Tamper-proof certificates · semester-wise results · public verification · role-based admin portal</div>
+    </div>
+    <div class="tag">About · Features · Policies</div>
+  </div>
+
+  <div class="sec">
+    <h2>1 · About the Application</h2>
+    <p class="p">
+      The university runs a secure certificate platform combining a <b>public website</b> (verify a certificate by hash,
+      check a student result, raise an issue — no login, no PII exposed) and an <b>admin portal</b>
+      (dashboard, certificates, results, analytics, issues, activity log, user management, branding and downloads).
+      It is built on a Node.js + Express REST API with a PostgreSQL database and a React front end.
+      Certificate hashes are optionally anchored on the Sepolia testnet blockchain for permanent, public proof.
+    </p>
+  </div>
+
+  <div class="sec">
+    <h2>2 · Key Features</h2>
+    <div class="two-col">
+      <div class="feat"><b>🛡️ Tamper-Proof Certificates</b>SHA-256 hash per certificate; optional IPFS + Sepolia on-chain anchoring.</div>
+      <div class="feat"><b>⚡ Instant Public Verification</b>Verify by hash only; validity status returned, never personal data.</div>
+      <div class="feat"><b>🔐 Role &amp; Department Scoping</b>7 roles with per-user section permissions and department-level API enforcement (403).</div>
+      <div class="feat"><b>📊 Results Management</b>Semester-wise results with multiple subjects; unique roll + semester prevents duplicates.</div>
+      <div class="feat"><b>📤 Bulk Upload</b>CSV / XLSX with header detection and mismatch report before committing.</div>
+      <div class="feat"><b>📜 Complete Audit Trail</b>Every key action logged with search; sessions survive restarts.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>3 · How It Works</h2>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><b>📜 Certificate is Issued</b>The records office issues a certificate; its unique hash is written to the blockchain.</div>
+      <div class="step"><span class="n">2</span><b>🔗 Stored Securely</b>The fingerprint stays permanently linked to the student record on-chain.</div>
+      <div class="step"><span class="n">3</span><b>✅ Verified Instantly</b>Employers and students verify authenticity in seconds — no paper, no third party.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="two-col">
+      <div>
+        <h2>4 · Roles &amp; Access</h2>
+        <table>
+          <tr><th>Role</th><th>Default access</th></tr>
+          <tr><td><span class="chip">Admin</span></td><td>Full access to every section &amp; all departments.</td></tr>
+          <tr><td><span class="chip">Normal User</span></td><td>Section-based access, department-scoped.</td></tr>
+          <tr><td><span class="chip">Department Head</span></td><td>Certificates, results, verify, analytics, issues, activity.</td></tr>
+          <tr><td><span class="chip">Privacy Manager</span></td><td>Verify, issues, activity, downloads.</td></tr>
+          <tr><td><span class="chip">Cyber Security</span></td><td>Monitor, verify, issues, activity.</td></tr>
+          <tr><td><span class="chip">HR / Legal</span></td><td>Verify, issues, activity, downloads.</td></tr>
+        </table>
+      </div>
+      <div>
+        <h2>5 · Technology Stack</h2>
+        <table>
+          <tr><td><b>Frontend</b></td><td>React 18 (Create React App), light/dark themes</td></tr>
+          <tr><td><b>Backend</b></td><td>Node.js + Express REST API</td></tr>
+          <tr><td><b>Database</b></td><td>PostgreSQL 16 (JSONB for subjects, permissions &amp; departments)</td></tr>
+          <tr><td><b>Blockchain</b></td><td>Optional Sepolia testnet anchoring</td></tr>
+          <tr><td><b>Files</b></td><td>XLSX parsing, CSV export</td></tr>
+          <tr><td><b>Ops</b></td><td>PM2 process manager, Docker Compose</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>6 · Policies</h2>
+    <div class="two-col">
+      <div class="blk">
+        <h2>🤝 Privacy Policy</h2>
+        <ul class="t">
+          <li><strong>Public verification only.</strong> A hash returns only "valid" / "not found" — names, roll numbers, results and contact details are never exposed publicly.</li>
+          <li><strong>No unnecessary collection.</strong> Only data required to operate the portal is stored (name, roll number, course, department, year, email, marks/grades, optional mobile/Aadhaar for exports).</li>
+          <li><strong>Under your control.</strong> Results are visible only to administration and staff granted access; department restrictions further limit visibility.</li>
+          <li><strong>Share the certificate, not the record.</strong> Holders share the hash so employers verify authenticity without revealing private records.</li>
+        </ul>
+      </div>
+      <div class="blk">
+        <h2>🛡️ Security &amp; Data Protection</h2>
+        <ul class="t">
+          <li><strong>Strong password storage:</strong> scrypt hashing; legacy SHA-256 hashes upgraded automatically at login.</li>
+          <li><strong>Session-based auth:</strong> random 64-char tokens in PostgreSQL; 12-hour idle expiry.</li>
+          <li><strong>Rate limiting &amp; lockout</strong> on repeated failed logins per IP.</li>
+          <li><strong>Server-side authorization</strong> on every protected endpoint (session + role + permission + department).</li>
+          <li><strong>ROPA &amp; DPIA:</strong> apps complete a GDPR Art. 30 register and Art. 35 risk assessment before going live / before high-risk processing; the admin portal tracks compliance per application.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>7 · Support &amp; How to Raise an Issue</h2>
+    <p class="fmt">
+      Students can raise an issue directly through the portal (roll number + semester); the records office triages it as
+      open / resolved / rejected. Administrative and technical support is handled by the University Official Records Office.
+    </p>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 Official Records Office</span>
+    <span class="badges">
+      <span>React 18</span><span>Node.js</span><span>PostgreSQL</span><span>Sepolia</span><span>PM2</span><span>Docker</span>
+    </span>
+  </div>
+
+</div>
+</body>
+</html>

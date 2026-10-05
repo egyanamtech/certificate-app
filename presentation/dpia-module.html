@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPIA Module — Presentation</title>
+<style>
+  :root { --ink:#0f172a; --mut:#475569; --acc:#2563eb; --line:#e2e8f0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--ink); background:#f1f5f9; }
+  .cover { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%); color:#fff; padding:64px 32px 48px; text-align:center; }
+  .cover h1 { font-size:42px; margin:0 0 8px; letter-spacing:.5px; }
+  .cover .sub { font-size:19px; opacity:.9; margin:0 0 24px; }
+  .cover .tags span { display:inline-block; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); border-radius:20px; padding:6px 14px; margin:4px; font-size:13px; }
+  .wrap { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
+  section.slide { background:#fff; border:1px solid var(--line); border-radius:16px; margin:0 0 32px; overflow:hidden; box-shadow:0 6px 24px rgba(15,23,42,.06); }
+  .slide-head { padding:22px 26px 12px; border-bottom:1px solid var(--line); }
+  .slide-head h2 { margin:0 0 6px; font-size:26px; color:var(--ink); }
+  .slide-head p { margin:0; color:var(--mut); font-size:15px; line-height:1.55; }
+  .slide-body { padding:22px 26px; }
+  .slide-body p { color:#334155; line-height:1.7; margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .card h3 { margin:0 0 10px; font-size:18px; color:var(--acc); }
+  .card table { width:100%; border-collapse:collapse; font-size:14px; }
+  .card td, .card th { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .card th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+  .chip { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:6px; padding:1px 8px; font-weight:600; font-size:12px; }
+  footer { text-align:center; color:var(--mut); font-size:13px; padding:8px 0 40px; }
+  .stages { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 18px; }
+  .stage { flex:1 1 auto; min-width:110px; border-radius:10px; padding:10px 12px; color:#fff; font-size:13px; font-weight:600; text-align:center; }
+  .stage small { display:block; font-weight:400; opacity:.85; font-size:11px; margin-top:3px; }
+  .arrow { align-self:center; color:var(--mut); font-size:16px; }
+  .demo-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px; }
+  .demo-box ol { margin:0; padding-left:20px; line-height:1.9; color:#334155; }
+  .badge { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:6px; padding:1px 8px; font-weight:600; font-size:12px; }
+  .shot-frame { width:100%; height:600px; object-fit:contain; object-position:center; border:1px solid var(--line); border-radius:12px; display:block; background:#f8fafc; }
+  @media print { body { background:#fff; } section.slide { box-shadow:none; break-inside:avoid; } .cover { -webkit-print-color-adjust:exact; } }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div style="font-size:56px;margin-bottom:10px;">🛡️</div>
+  <h1>DPIA Module</h1>
+  <p class="sub">Data Protection Impact Assessment — Configurable Approval Workflow · Complete Audit Trail</p>
+  <div class="tags">
+    <span>8-Stage Pipeline</span><span>⚙️ Admin-Configurable</span><span>🔒 Admin Approval Gates</span>
+    <span>📋 Full Audit Trail</span><span>📊 Executive Report</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section class="slide">
+    <div class="slide-head"><h2>1 · What is the DPIA Module?</h2>
+      <p>Identify, document and manage privacy risks of every processing activity handling personal / student data before it goes live.</p></div>
+    <div class="slide-body">
+      <p>The DPIA module lives inside the Admin Portal under the <strong>🛡️ DPIA</strong> tab and follows the stage-gated, document-then-approve pattern recommended by GDPR Art. 35 and aligned with the India DPDP Act principles.</p>
+      <p><strong>Key capability:</strong> the approval pipeline is <strong>not hard-coded</strong> — it is fully configurable by an administrator. Rename stages, reorder, add/remove gates, require comments, and restrict steps to admins.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>Live — DPIA Reporting &amp; Dashboard</h2>
+      <p>Portfolio KPIs, status by business unit, data categories and risk breakdown — with the DPIA registry below.</p></div>
+    <div class="slide-body">
+      <img src="__IMG1__" class="shot-frame">
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>2 · The Default Approval Workflow (8 Stages)</h2>
+      <p>Every stage is colour-coded and shown as a live stepper so staff always see exactly where a DPIA stands.</p></div>
+    <div class="slide-body">
+      <div class="stages">
+        <div class="stage" style="background:#64748b;">Draft<small>document &amp; scope</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#3b82f6;">Assessment<small>risks recorded</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#8b5cf6;">Review<small>independent review</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#f59e0b;">Risk Treatment<small>mitigations tracked</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#ec4899;">Privacy Review<small>DPO sign-off</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#f97316;">Approval<small>final gate</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#22c55e;">Active<small>DPIA complete</small></div>
+        <div class="arrow">→</div>
+        <div class="stage" style="background:#06b6d4;">Periodic Review<small>scheduled re-check</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>3 · Transition &amp; Governance Rules</h2>
+      <p>Transitions are validated against the configured workflow — you cannot jump stages that aren't permitted.</p></div>
+    <div class="slide-body">
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead><tr style="background:#f8fafc;"><th style="text-align:left;padding:8px 10px;color:var(--mut);">From</th><th style="text-align:left;padding:8px 10px;color:var(--mut);">To</th><th style="text-align:left;padding:8px 10px;color:var(--mut);">Action</th><th style="padding:8px 10px;color:var(--mut);">Comment?</th><th style="padding:8px 10px;color:var(--mut);">Admin?</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Draft</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Assessment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Start Assessment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Assessment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Draft</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Send Back to Draft</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Assessment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Submit for Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Risk Treatment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Approve Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Risk Treatment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Privacy Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Complete Risk Treatment</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Privacy Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Approval</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Submit for Approval</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr style="background:#fef2f2;"><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Approval</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Active</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Approve &amp; Activate</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td></tr>
+          <tr style="background:#fef2f2;"><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Approval</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Privacy Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Reject — Return for Revisions</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td></tr>
+          <tr><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Active</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Periodic Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Start Periodic Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">–</td></tr>
+          <tr style="background:#fef2f2;"><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Periodic Review</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);">Active</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;">Re-confirm &amp; Reactivate</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td><td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;">✔</td></tr>
+          <tr><td style="padding:7px 10px;">Periodic Review</td><td style="padding:7px 10px;">Assessment</td><td style="padding:7px 10px;">Trigger Re-assessment</td><td style="padding:7px 10px;text-align:center;">✔</td><td style="padding:7px 10px;text-align:center;">–</td></tr>
+        </tbody>
+      </table>
+      <ul style="padding-left:18px;line-height:1.8;color:#334155;margin:14px 0 0;">
+        <li><strong>Approval → Active</strong> is restricted to <strong>admins</strong> and <strong>requires a comment</strong>.</li>
+        <li><strong>Rejection</strong> returns the DPIA to Privacy Review — there is no shortcut straight back to Active.</li>
+        <li><strong>No route from Privacy Review to Active</strong> — the Approval gate cannot be skipped.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>Live — Workflow Detail: Stepper, Risks &amp; Audit Trail</h2>
+      <p>Expanded DPIA showing the stage-gated stepper, advance buttons, privacy risks and the full audit trail with dates, usernames and comments.</p></div>
+    <div class="slide-body">
+      <img src="__IMG2__" class="shot-frame">
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>4 · Complete Audit Trail</h2>
+      <p>Every action is written to a dedicated audit log and shown in the DPIA detail panel.</p></div>
+    <div class="slide-body">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tbody>
+          <tr><th style="text-align:left;width:150px;padding:8px 10px;color:var(--mut);">Who</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Username that performed the action</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">What</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);"><span class="badge">created</span> <span class="badge">updated</span> <span class="badge">stage_changed</span> <span class="badge">approved</span> <span class="badge">rejected</span> <span class="badge">risk_added</span> <span class="badge">risk_updated</span> <span class="badge">deleted</span></td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Where</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">from_stage → to_stage (colour-coded)</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">When</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Timestamp of the change</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Why</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Mandatory comment on gated transitions</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Meta</th><td style="padding:8px 10px;">Transition label used, risk counts, file metadata</td></tr>
+        </tbody>
+      </table>
+      <p style="margin:14px 0 0;">Every approval, rejection, and stage move is traceable — you can always reconstruct <strong>who approved a DPIA and why</strong>.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>5 · Admin-Configurable Workflow (⚙️ Editor)</h2>
+      <p>Only administrators can modify the pipeline — a server-side admin permission protects the editor.</p></div>
+    <div class="slide-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Stage management</strong>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;">Re-order, add, or remove stages — edit labels and colours live.</p>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Transition rules</strong>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;">Define allowed from → to moves; mark each as <em>comment required</em> and/or <em>admin only</em>.</p>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Reset to defaults</strong>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;">One click restores the standard 8-stage pipeline.</p>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Immediate effect</strong>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;">Changes persist and drive the stepper, transitions, dashboard pipeline counts, and the executive report.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>Live — Admin-Configurable Workflow Editor</h2>
+      <p>The ⚙️ Workflow screen lets an admin rename &amp; recolour stages, reorder them, and define every transition with Comment and Admin-only rules, plus one-click Reset to Defaults.</p></div>
+    <div class="slide-body">
+      <img src="__IMG3__" class="shot-frame">
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>Live — DPIA Form</h2>
+      <p>The New/Edit DPIA form captures title, business unit, workflow stage, risk level, dates, data categories, third-party flag and per-risk remediation.</p></div>
+    <div class="slide-body">
+      <img src="__IMG2_5__" class="shot-frame">
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>6 · Dashboard &amp; Executive Report</h2>
+      <p>Live oversight of the whole DPIA portfolio.</p></div>
+    <div class="slide-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Admin Dashboard (DPIA tab)</strong>
+          <ul style="margin:8px 0 0;padding-left:18px;line-height:1.7;color:#334155;font-size:14px;">
+            <li>Total DPIAs · Completed / Open</li>
+            <li>High-risk activities · Open / Overdue risks</li>
+            <li>Third-party processing · Data categories</li>
+            <li>Workflow pipeline stage counts</li>
+            <li>Status by business unit · Risk breakdown</li>
+          </ul>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <strong>Executive Report (downloadable)</strong>
+          <ul style="margin:8px 0 0;padding-left:18px;line-height:1.7;color:#334155;font-size:14px;">
+            <li>Portfolio totals &amp; completion status</li>
+            <li><strong>Workflow Pipeline</strong> — DPIAs per stage in order</li>
+            <li>Status by business unit</li>
+            <li>Top open high / critical risks</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>7 · Privacy Risk Assessment (built-in)</h2>
+      <p>Each DPIA carries multiple privacy risks with full remediation tracking.</p></div>
+    <div class="slide-body">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tbody>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Description</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">What the risk is</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Likelihood / Impact</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Rated scales</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Risk level</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Computed low / medium / high / critical</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Status + remediation</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">open / mitigating / resolved, with plan &amp; due date</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Oversight</th><td style="padding:8px 10px;">Open / overdue risks surface on the dashboard so they can't be forgotten</td></tr>
+        </tbody>
+      </table>
+      <p style="margin:14px 0 0;">Data categories captured per DPIA include: Student Records, Academic Results, Aadhaar Data, Mobile Numbers, Biometric Data, Health Records, Financial Data, HR Employee Data, CCTV / Surveillance, IoT / Sensors, Campus Access and Online Services.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>8 · Technical Implementation</h2>
+      <p>Governance rules are enforced server-side, not just hidden in the UI.</p></div>
+    <div class="slide-body">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tbody>
+          <tr><th style="text-align:left;width:150px;padding:8px 10px;color:var(--mut);">Database</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">dpia_assessments · dpia_risks · dpia_audit_log (CASCADE) · dpia_workflow_config (JSONB)</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Backend API</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">/api/dpia (CRUD) · /api/dpia/:id/transition · /api/dpia/workflow (GET/PUT, admin) · /api/dpia/dashboard · /api/dpia/report</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Frontend</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">React admin section — stepper, transition buttons, audit trail, workflow editor</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Security</th><td style="padding:8px 10px;border-bottom:1px solid var(--line);">Admin gates &amp; required comments validated on the server; permission-scoped (dpia / admin)</td></tr>
+          <tr><th style="text-align:left;padding:8px 10px;color:var(--mut);">Config persistence</th><td style="padding:8px 10px;">Workflow stored in JSONB; invalid / removed transitions fall back to safe defaults</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-head"><h2>9 · Live Demo Script (2 minutes)</h2>
+      <p>Walkthrough in the Admin Portal.</p></div>
+    <div class="slide-body">
+      <div class="demo-box">
+        <ol>
+          <li>Open <strong>Admin Portal → 🛡️ DPIA</strong> (admin login).</li>
+          <li>Click <strong>+ New DPIA</strong> — fill title, pick data categories, add one risk, save.</li>
+          <li>Show the <strong>stepper</strong> — the DPIA is in <em>Draft</em>.</li>
+          <li>Click through <strong>Start Assessment → Submit for Review → Approve Review → Complete Risk Treatment → Submit for Approval</strong>.</li>
+          <li>At <strong>Approval</strong>, demonstrate the gate — show a comment is <strong>required</strong> before <strong>Approve &amp; Activate</strong> goes through.</li>
+          <li>Expand the DPIA — scroll the <strong>Audit Trail</strong>: every step, who did it, when, and the approval comment.</li>
+          <li>Open <strong>⚙️ Workflow</strong> — show stages are editable, then <strong>Reset to Defaults</strong>.</li>
+          <li>Click <strong>View Report</strong> — point to the <strong>Workflow Pipeline</strong> section.</li>
+          <li>(Optional) Reject a DPIA at Approval → show it returns to <strong>Privacy Review</strong>.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <footer>Certificate &amp; Campus e-Governance Portal · DPIA Module Presentation · generated 28 September 2026</footer>
+
+</div>
+</body>
+</html>
