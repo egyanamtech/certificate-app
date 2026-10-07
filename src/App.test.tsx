@@ -2,12 +2,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
 import { UNIVERSITY } from './config';
 
+let mockFetch: jest.Mock;
+
 beforeEach(() => {
   localStorage.clear();
   window.location.hash = '';
-  global.fetch = jest.fn(() =>
+  mockFetch = jest.fn(() =>
     Promise.resolve({ json: () => Promise.resolve({ name: UNIVERSITY.name }) })
   );
+  global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterEach(() => {
@@ -20,14 +23,14 @@ test('renders landing page with university branding', async () => {
   expect(screen.getByText(/Blockchain Certificate Issuance/)).toBeInTheDocument();
   expect(screen.getByText(/Verify a Certificate/)).toBeInTheDocument();
   expect(screen.getByText(/Admin Portal/)).toBeInTheDocument();
-  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 });
 
 test('shows How It Works and trust sections', async () => {
   render(<App />);
   expect(screen.getByRole('heading', { name: 'How It Works' })).toBeInTheDocument();
   expect(screen.getByText(/no third party/)).toBeInTheDocument();
-  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 });
 
 test('navigates to verify page via button', async () => {
@@ -35,14 +38,14 @@ test('navigates to verify page via button', async () => {
   fireEvent.click(screen.getByText(/Verify a Certificate/));
   expect(screen.getByRole('heading', { name: 'Verify Certificate' })).toBeInTheDocument();
   expect(window.location.hash).toBe('#verify');
-  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 });
 
 test('navigates to admin portal via button', async () => {
   render(<App />);
   fireEvent.click(screen.getByText(/Admin Portal/));
   expect(window.location.hash).toBe('#admin');
-  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 });
 
 test('theme toggle flips between dark and light', async () => {

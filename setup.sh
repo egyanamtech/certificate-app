@@ -65,7 +65,7 @@ if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
   pm2 restart "$APP_NAME" --update-env
 else
   say "Starting $APP_NAME with PM2..."
-  pm2 start server.js --name "$APP_NAME" --update-env
+  pm2 start src/server.ts --node-args="--import tsx" --name "$APP_NAME" --update-env
 fi
 pm2 save
 

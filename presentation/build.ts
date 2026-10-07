@@ -1,10 +1,11 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
-const SRC_DIR = path.join(__dirname, "screenshots");
-const OUT = path.join(__dirname, "certificate-app-presentation.html");
+const HERE = (import.meta as any).dirname || process.cwd();
+const SRC_DIR = path.join(HERE, "screenshots");
+const OUT = path.join(HERE, "certificate-app-presentation.html");
 
-const slides = [
+const slides: Array<[string, string, string]> = [
   ["01-home.png", "Public Landing Page", "Branded landing page with university logo, name, tagline, How It Works explainer (Issue → Store → Verify), trust band and dark/light theme toggle."],
   ["02-verify-certificate.png", "Verify Certificate (Public)", "Anyone can verify a certificate by entering its hash. The backend returns only validity — no student personal data is exposed."],
   ["03-check-result.png", "Check Result (Public)", "Students can look up semester-wise results by roll number, and raise issues against them without any login."],
@@ -24,7 +25,7 @@ const slides = [
   ["17-downloads.png", "Downloads", "One-stop export hub for the certificate registry and results as CSV or Excel."],
 ];
 
-const roles = [
+const roles: Array<[string, string]> = [
   ["Admin", "Full access to every section and all departments."],
   ["Normal User", "Section-based access; page permissions controlled per user."],
   ["Department Head", "Certificates, Results, Verify, Analytics, Issues, Activity (department-scoped)."],
@@ -34,7 +35,7 @@ const roles = [
   ["Legal", "Verify, Issues, Activity, Downloads."],
 ];
 
-const features = [
+const features: Array<[string, string]> = [
   ["SHA-256 Tamper-Proof Certificates", "Every certificate gets a unique cryptographic hash; optional anchoring to the Sepolia testnet blockchain and IPFS."],
   ["Role & Department Scoping", "Seven roles with fine-grained section permissions; normal users can be restricted to specific departments and cannot bypass the filter."],
   ["Bulk Upload With Mismatch Reports", "CSV / XLSX uploads for certificates and results with header detection and a full mismatch report before committing."],
@@ -43,7 +44,7 @@ const features = [
   ["Python-Fast Production Readiness", "Express + PostgreSQL JSONB backend, React SPA frontend, PM2 process management and Docker Compose deployment."],
 ];
 
-const tech = [
+const tech: Array<[string, string]> = [
   ["Frontend", "React (Create React App), custom CSS with light/dark themes"],
   ["Backend", "Node.js + Express REST API"],
   ["Database", "PostgreSQL 16 (JSONB for subjects, permissions & departments)"],
@@ -52,17 +53,17 @@ const tech = [
   ["Ops", "PM2 process manager, Docker Compose"],
 ];
 
-function slideHtml([file, title, desc]) {
-  const b64 = fs.readFileSync(path.join(SRC_DIR, file)).toString("base64");
+function slideHtml(fileInfo: [string, string, string]) {
+  const b64 = fs.readFileSync(path.join(SRC_DIR, fileInfo[0])).toString("base64");
   return `
   <section class="slide">
     <div class="slide-head">
       <span class="slide-num"></span>
-      <h2>${title}</h2>
-      <p>${desc}</p>
+      <h2>${fileInfo[1]}</h2>
+      <p>${fileInfo[2]}</p>
     </div>
     <div class="slide-shot">
-      <a href="screenshots/${file}" target="_blank"><img src="data:image/png;base64,${b64}" alt="${title}" loading="lazy"></a>
+      <a href="screenshots/${fileInfo[0]}" target="_blank"><img src="data:image/png;base64,${b64}" alt="${fileInfo[1]}" loading="lazy"></a>
     </div>
   </section>`;
 }
@@ -150,7 +151,7 @@ const html = `<!DOCTYPE html>
   <section class="card">
     <h3>✨ Key Features</h3>
     <div class="grid2">
-      ${features.map(([t, d]) => `<div style="border:1px solid var(--line);border-radius:12px;padding:14px;"><strong>${t}</strong><p style="margin:6px 0 0;font-size:14px;color:#475569;">${d}</p></div>`).join("")}
+      ${features.map((t) => `<div style="border:1px solid var(--line);border-radius:12px;padding:14px;"><strong>${t[0]}</strong><p style="margin:6px 0 0;font-size:14px;color:#475569;">${t[1]}</p></div>`).join("")}
     </div>
   </section>
 
@@ -159,7 +160,7 @@ const html = `<!DOCTYPE html>
     <table>
       <thead><tr><th>Role</th><th>Default Access</th></tr></thead>
       <tbody>
-        ${roles.map(([r, d]) => `<tr><td><span class="chip">${r}</span></td><td>${d}</td></tr>`).join("")}
+        ${roles.map((r) => `<tr><td><span class="chip">${r[0]}</span></td><td>${r[1]}</td></tr>`).join("")}
       </tbody>
     </table>
     <p style="font-size:13px;color:var(--mut);margin:12px 0 0;">Normal users can be limited to specific departments at the API level (403 enforced) — empty department selection means all departments.</p>
@@ -169,7 +170,7 @@ const html = `<!DOCTYPE html>
     <h3>🛠 Technology Stack</h3>
     <table>
       <tbody>
-        ${tech.map(([t, v]) => `<tr><th style="width:160px;">${t}</th><td>${v}</td></tr>`).join("")}
+        ${tech.map((t) => `<tr><th style="width:160px;">${t[0]}</th><td>${t[1]}</td></tr>`).join("")}
       </tbody>
     </table>
   </section>

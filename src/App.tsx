@@ -3,24 +3,36 @@ import AdminPage from "./AdminPage";
 import VerifyPage from "./VerifyPage";
 import VerifyResult from "./VerifyResult";
 import { UNIVERSITY, DEFAULT_LOGO_SVG } from "./config";
+import type { UniversityBrand, BrandRecord } from "./types/brand";
+import type { ThemeContextValue, ThemeMode } from "./types/theme";
 import "./App.css";
 
-const ThemeContext = createContext();
-const BrandContext = createContext();
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export { ThemeContext, BrandContext };
-
-export function useTheme() {
-  return useContext(ThemeContext);
+export interface BrandContextValue {
+  brand: UniversityBrand;
+  setBrand: React.Dispatch<React.SetStateAction<UniversityBrand>>;
 }
 
-export function useBrand() {
-  return useContext(BrandContext);
+export const BrandContext = createContext<BrandContextValue | null>(null);
+
+export function useTheme(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within a ThemeContext.Provider");
+  return ctx;
+}
+
+export function useBrand(): BrandContextValue {
+  const ctx = useContext(BrandContext);
+  if (!ctx) throw new Error("useBrand must be used within a BrandContext.Provider");
+  return ctx;
 }
 
 export { Logo };
 
-function getPageFromHash() {
+type PageName = "home" | "admin" | "verify" | "result";
+
+function getPageFromHash(): PageName {
   const raw = window.location.hash.slice(1).replace(/^\//, "") || "";
   if (raw === "admin") return "admin";
   if (raw === "verify" || raw.startsWith("verify/")) return "verify";
@@ -28,11 +40,11 @@ function getPageFromHash() {
   return "home";
 }
 
-function getHashParam() {
+function getHashParam(): string {
   return window.location.hash.slice(1).replace(/^\//, "").split("/")[1] || "";
 }
 
-function Logo({ size = 80 }) {
+function Logo({ size = 80 }: { size?: number }) {
   const { brand } = useBrand();
   if (brand.logo) {
     return <img src={brand.logo} alt={brand.name} style={{ width: size, height: size, borderRadius: "18px", objectFit: "cover" }} />;
@@ -44,20 +56,29 @@ function Logo({ size = 80 }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState(getPageFromHash);
-  const [theme, setTheme] = useState(() => localStorage.getItem("app_theme") || "dark");
-  const [brand, setBrand] = useState(UNIVERSITY);
+  const [page, setPage] = useState<PageName>(getPageFromHash);
+  const [theme, setTheme] = useState<ThemeMode>(() =>
+    localStorage.getItem("app_theme") === "light" ? "light" : "dark"
+  );
+  const [brand, setBrand] = useState<UniversityBrand>(UNIVERSITY);
+
+  const toggleTheme = () => setTheme(t => {
+    const next: ThemeMode = t === "dark" ? "light" : "dark";
+    localStorage.setItem("app_theme", next);
+    return next;
+  });
 
   useEffect(() => {
     fetch(`${window.location.origin.replace(/:\d+$/, "")}:5000/api/brand`)
       .then(r => r.json())
-      .then(full => {
+      .then((full: Partial<BrandRecord>) => {
         if (full && full.name) setBrand(b => ({ ...b, ...full }));
       })
       .catch(() => {});
   }, []);
 
-  const brandValue = { brand, setBrand };
+  const brandValue: BrandContextValue = { brand, setBrand };
+  const themeValue: ThemeContextValue = { theme, toggleTheme };
 
   useEffect(() => {
     const base = brand.name || "University";
@@ -80,12 +101,6 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const toggleTheme = () => setTheme(t => {
-    const next = t === "dark" ? "light" : "dark";
-    localStorage.setItem("app_theme", next);
-    return next;
-  });
-
   document.body.className = theme;
 
   const goHome = () => {
@@ -94,21 +109,21 @@ export default function App() {
   };
 
   if (page === "admin") return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={themeValue}>
       <BrandContext.Provider value={brandValue}>
         <AdminPage onBack={goHome} />
       </BrandContext.Provider>
     </ThemeContext.Provider>
   );
   if (page === "verify") return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={themeValue}>
       <BrandContext.Provider value={brandValue}>
         <VerifyPage onBack={goHome} initialHash={getHashParam()} />
       </BrandContext.Provider>
     </ThemeContext.Provider>
   );
   if (page === "result") return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={themeValue}>
       <BrandContext.Provider value={brandValue}>
         <VerifyResult onBack={goHome} />
       </BrandContext.Provider>
@@ -116,7 +131,7 @@ export default function App() {
   );
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={themeValue}>
       <BrandContext.Provider value={brandValue}>
         <div className="landing-page">
           <header className="landing-nav">

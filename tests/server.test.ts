@@ -1,5 +1,5 @@
-const { hashPass, verifyPass, parseJson, CERT_COLS, DEFAULT_BRAND } = require("../server");
-const crypto = require("crypto");
+import { hashPass, verifyPass, parseJson, CERT_COLS, DEFAULT_BRAND } from "../src/server";
+import * as crypto from "crypto";
 
 describe("hashPass", () => {
   test("returns salted scrypt hash", () => {

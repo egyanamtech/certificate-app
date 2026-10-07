@@ -1,4 +1,6 @@
-export const UNIVERSITY = {
+import type { UniversityBrand } from "./types/brand";
+
+export const UNIVERSITY: UniversityBrand = {
   name: "XYZ University",
   shortName: "XYZ",
   tagline: "Blockchain Certificate Issuance & Verification",
@@ -8,7 +10,7 @@ export const UNIVERSITY = {
   logo: null,
 };
 
-export const DEFAULT_LOGO_SVG = `
+export const DEFAULT_LOGO_SVG: string = `
   <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -23,4 +25,4 @@ export const DEFAULT_LOGO_SVG = `
   </svg>
 `;
 
-export const LOGO_SVG = DEFAULT_LOGO_SVG;
+export const LOGO_SVG: string = DEFAULT_LOGO_SVG;

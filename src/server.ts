@@ -1,13 +1,16 @@
-const express = require("express");
-const multer = require("multer");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-const XLSX = require("xlsx");
-const { ethers } = require("ethers");
-const { pool, init } = require("./db");
-require("dotenv").config();
+import express from "express";
+import multer from "multer";
+import cors from "cors";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import XLSX from "xlsx";
+import { ethers } from "ethers";
+import { pool, init } from "./db";
+import dotenv from "dotenv";
+import type { Request, Response, NextFunction } from "express";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -21,7 +24,7 @@ const MONITOR_APP_KEY = process.env.MONITOR_APP_KEY || "certificate-portal";
 const MONITOR_POLL_INTERVAL = parseInt(process.env.MONITOR_POLL_INTERVAL || "30", 10) * 1000;
 const MONITOR_CHECK_TIMEOUT = parseInt(process.env.MONITOR_CHECK_TIMEOUT || "5000", 10);
 
-async function insertMonitorEvent({ appKey, type, severity, message, username, ip }) {
+async function insertMonitorEvent({ appKey, type, severity, message, username, ip }: any) {
   let appId = null;
   if (appKey) {
     const { rows } = await pool.query("SELECT id, name FROM monitor_apps WHERE app_key = $1", [appKey]).catch(() => ({ rows: [] }));
@@ -36,12 +39,12 @@ async function insertMonitorEvent({ appKey, type, severity, message, username, i
       [appId, String(appKey || "").slice(0, 100), String(type || "security").slice(0, 100), sev,
        String(message || "").slice(0, 1000), String(username || "").slice(0, 255), String(ip || "").slice(0, 64)]
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("Monitor event insert failed:", e.message);
   }
 }
 
-function reportEvent(type, severity, message, username, ip) {
+function reportEvent(type: any, severity: any, message: any, username: any, ip?: any) {
   insertMonitorEvent({ appKey: MONITOR_APP_KEY, type, severity, message, username, ip });
 }
 
@@ -68,8 +71,8 @@ const SEPOLIA_RPC = process.env.SEPOLIA_RPC_URL;
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const ADMIN_KEY = process.env.ADMIN_PRIVATE_KEY;
 
-const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
-const wallet = new ethers.Wallet(ADMIN_KEY, provider);
+const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC ?? "");
+const wallet = new ethers.Wallet(ADMIN_KEY ?? "", provider);
 
 const contractABI = [
   {
@@ -84,7 +87,7 @@ const contractABI = [
     type: "function"
   }
 ];
-const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, wallet);
+const contract = new ethers.Contract(CONTRACT_ADDRESS ?? "", contractABI, wallet);
 
 const ADMIN_USER = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || "admin123";
@@ -97,13 +100,13 @@ const DEFAULT_BRAND = {
 
 const CERT_COLS = `hash, name, "rollNumber", course, department, year, email, "ipfsHash", "txHash", timestamp`;
 
-function hashPass(pw) {
+function hashPass(pw: any) {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(String(pw), salt, 64).toString("hex");
   return `scrypt$${salt}$${hash}`;
 }
 
-function verifyPass(stored, pw) {
+function verifyPass(stored: any, pw: any) {
   if (typeof stored === "string" && stored.startsWith("scrypt$")) {
     const [, salt, hash] = stored.split("$");
     if (!salt || !hash) return false;
@@ -116,17 +119,17 @@ function verifyPass(stored, pw) {
   return crypto.timingSafeEqual(Buffer.from(legacy), Buffer.from(stored));
 }
 
-function parseJson(v, fallback) {
+function parseJson(v: any, fallback: any) {
   if (v == null) return fallback;
   if (typeof v === "object") return v;
   try {
     return JSON.parse(v);
-  } catch (e) {
+  } catch (e: any) {
     return fallback;
   }
 }
 
-function normalizeSemester(v) {
+function normalizeSemester(v: any) {
   const s = String(v || "").trim();
   if (!s) return s;
   const m = s.match(/(\d+)/);
@@ -137,9 +140,9 @@ function normalizeSemester(v) {
   return s;
 }
 
-const ACTIVITY_SEVERITY = MONITOR_SEVERITY;
+const ACTIVITY_SEVERITY: Record<string, string> = MONITOR_SEVERITY;
 
-function summarizeAction(type, details) {
+function summarizeAction(type: any, details: any) {
   const d = details || {};
   switch (type) {
     case "CERTIFICATE_ISSUED": return `Certificate issued for ${d.name || "?"} (${d.rollNumber || "no roll"})${d.onChain ? " · on-chain" : ""}`;
@@ -169,7 +172,7 @@ function summarizeAction(type, details) {
   }
 }
 
-async function logActivity(type, details) {
+async function logActivity(type: any, details: any) {
   const actor = (details && details.user) || "";
   reportEvent(type.toLowerCase().replace(/_/g, "_"), ACTIVITY_SEVERITY[type] || "info", summarizeAction(type, details), actor);
   await pool.query(
@@ -180,7 +183,7 @@ async function logActivity(type, details) {
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
-async function createSession(username) {
+async function createSession(username: any) {
   const token = crypto.randomBytes(32).toString("hex");
   const expires = Date.now() + SESSION_TTL_MS;
   await pool.query("DELETE FROM app_sessions WHERE expires < $1", [Date.now()]);
@@ -188,7 +191,7 @@ async function createSession(username) {
   return token;
 }
 
-async function getUsernameFromReq(req) {
+async function getUsernameFromReq(req: Request) {
   const token = req.get("x-auth-token");
   if (!token) return null;
   const { rows } = await pool.query("SELECT username, expires FROM app_sessions WHERE token = $1", [token]);
@@ -202,19 +205,19 @@ async function getUsernameFromReq(req) {
   return s.username;
 }
 
-async function isAdminRequest(req) {
+async function isAdminRequest(req: Request) {
   const uname = await getUsernameFromReq(req);
   if (!uname) return false;
   const { rows } = await pool.query("SELECT * FROM users WHERE username = $1 AND role = 'admin'", [uname]);
   return rows.length > 0;
 }
 
-async function requireAdmin(req, res, next) {
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (await isAdminRequest(req)) return next();
   return res.status(403).json({ error: "Admin access required" });
 }
 
-function parsePerms(v) {
+function parsePerms(v: any) {
   const arr = typeof v === "string" ? parseJson(v, []) : v;
   return Array.isArray(arr) ? arr.map(String) : [];
 }
@@ -223,12 +226,12 @@ const parseDepts = parsePerms;
 
 const ROLE_KEYS = ["admin", "user", "department-head", "privacy-manager", "cybersecurity", "hr", "legal"];
 
-function normalizeRole(role) {
+function normalizeRole(role: any) {
   if (role === "admin") return "admin";
   return ROLE_KEYS.includes(role) ? String(role) : "user";
 }
 
-async function hasPerm(req, perm) {
+async function hasPerm(req: Request, perm: string) {
   const uname = await getUsernameFromReq(req);
   if (!uname) return false;
   const { rows } = await pool.query("SELECT role, permissions FROM users WHERE username = $1", [uname]);
@@ -237,12 +240,12 @@ async function hasPerm(req, perm) {
   return parsePerms(rows[0].permissions).includes(perm);
 }
 
-const requirePerm = (perm) => async (req, res, next) => {
+const requirePerm = (perm: string) => async (req: Request, res: Response, next: NextFunction) => {
   if (await hasPerm(req, perm)) return next();
   return res.status(403).json({ error: "Permission denied" });
 };
 
-async function getDeptScope(req) {
+async function getDeptScope(req: Request) {
   const uname = await getUsernameFromReq(req);
   if (!uname) return { restricted: true, depts: [] };
   const { rows } = await pool.query("SELECT role, departments FROM users WHERE username = $1", [uname]);
@@ -252,7 +255,7 @@ async function getDeptScope(req) {
   return { restricted: depts.length > 0, depts };
 }
 
-function deptAllowed(scope, department) {
+function deptAllowed(scope: any, department: any) {
   return !scope.restricted || scope.depts.includes(department);
 }
 
@@ -262,10 +265,10 @@ const otpStore = new Map(); // rollKey -> { hash, expires, attempts, lastRequest
 const resultAccessTokens = new Map(); // token -> { rollKey, expires }
 const RESULT_TOKEN_TTL_MS = 15 * 60 * 1000;
 
-const digitsOnly = (v) => String(v || "").replace(/\D/g, "");
-const maskMobile = (m) => (m && m.length >= 4 ? "XXXXXXX" + m.slice(-4) : "your registered mobile");
+const digitsOnly = (v: any) => String(v || "").replace(/\D/g, "");
+const maskMobile = (m: any) => (m && m.length >= 4 ? "XXXXXXX" + m.slice(-4) : "your registered mobile");
 
-async function sendSms(mobile, message) {
+async function sendSms(mobile: any, message: any) {
   const cfg = await getSmsConfig();
   if (!cfg.provider || cfg.provider === "none" || !cfg.apiKey || !mobile) return { demo: true };
   try {
@@ -315,7 +318,7 @@ async function sendSms(mobile, message) {
       }
     }
     return { demo: false, ok };
-  } catch (e) {
+  } catch (e: any) {
     console.error("SMS send failed:", e.message);
     return { demo: false, ok: false };
   }
@@ -337,7 +340,7 @@ async function getSmsConfig() {
   }
 }
 
-app.get("/api/settings/sms", requireAdmin, async (req, res) => {
+app.get("/api/settings/sms", requireAdmin, async (req: Request, res: Response) => {
   const cfg = await getSmsConfig();
   res.json({
     provider: cfg.provider || "none",
@@ -347,7 +350,7 @@ app.get("/api/settings/sms", requireAdmin, async (req, res) => {
   });
 });
 
-app.put("/api/settings/sms", requireAdmin, async (req, res) => {
+app.put("/api/settings/sms", requireAdmin, async (req: Request, res: Response) => {
   const { provider, apiKey, senderId, templateId, baseUrl } = req.body || {};
   const allowed = ["none", "fast2sms", "msg91", "textlocal", "android"];
   if (!allowed.includes(provider)) return res.status(400).json({ error: "Invalid provider" });
@@ -359,7 +362,7 @@ app.put("/api/settings/sms", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/settings/sms/test", requireAdmin, async (req, res) => {
+app.post("/api/settings/sms/test", requireAdmin, async (req: Request, res: Response) => {
   const mobile = digitsOnly(req.body?.mobile);
   if (mobile.length < 10) return res.status(400).json({ error: "Enter a valid 10-digit mobile number" });
   const otp = String(crypto.randomInt(100000, 999999));
@@ -369,7 +372,7 @@ app.post("/api/settings/sms/test", requireAdmin, async (req, res) => {
   res.json({ success: true, note: "Test SMS sent successfully" });
 });
 
-app.post("/api/results/otp/request", async (req, res) => {
+app.post("/api/results/otp/request", async (req: Request, res: Response) => {
   const { rollNumber, aadhaar } = req.body || {};
   const roll = String(rollNumber || "").trim().toLowerCase();
   const aad = digitsOnly(aadhaar);
@@ -412,7 +415,7 @@ app.post("/api/results/otp/request", async (req, res) => {
   res.json({ success: true, maskedMobile: maskMobile(mobile), demoOtp: sent.demo ? otp : undefined });
 });
 
-app.post("/api/results/otp/verify", async (req, res) => {
+app.post("/api/results/otp/verify", async (req: Request, res: Response) => {
   const { rollNumber, otp } = req.body || {};
   const roll = String(rollNumber || "").trim().toLowerCase();
   const rec = otpStore.get(roll);
@@ -447,10 +450,10 @@ async function listCertificates() {
   return rows;
 }
 
-app.post("/upload", upload.single("file"), async (req, res) => {
+app.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).send("No file uploaded");
-    const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+    const blob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype });
     const formData = new FormData();
     formData.append("file", blob, req.file.originalname);
     formData.append("network", "public");
@@ -462,13 +465,13 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const data = await response.json();
     console.log("Pinata response:", data);
     res.json(data);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Upload error:", err);
     res.status(500).send("Upload failed");
   }
 });
 
-app.post("/api/certificates", async (req, res) => {
+app.post("/api/certificates", async (req: Request, res: Response) => {
   const { hash, name, rollNumber, course, department, year, email, ipfsHash, txHash } = req.body;
   if (!hash || !name || !ipfsHash) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -487,8 +490,8 @@ app.post("/api/certificates", async (req, res) => {
   res.json({ success: true });
 });
 
-app.get("/api/search", async (req, res) => {
-  const q = (req.query.q || "").toLowerCase().trim();
+app.get("/api/search", async (req: Request, res: Response) => {
+  const q = (String(req.query.q) || "").toLowerCase().trim();
   if (!q) return res.json([]);
   const like = `%${q}%`;
   const { rows } = await pool.query(
@@ -499,18 +502,18 @@ app.get("/api/search", async (req, res) => {
   res.json(rows);
 });
 
-app.get("/api/verify/:hash", async (req, res) => {
-  const hash = req.params.hash.toLowerCase();
+app.get("/api/verify/:hash", async (req: Request, res: Response) => {
+  const hash = String(req.params.hash).toLowerCase();
   const { rows } = await pool.query('SELECT hash, "ipfsHash" FROM certificates WHERE LOWER(hash) = $1', [hash]);
   res.json(rows.length ? { valid: true, hash, ipfsHash: rows[0].ipfsHash || "" } : { valid: false });
 });
 
-app.get("/api/certificates", async (req, res) => {
+app.get("/api/certificates", async (req: Request, res: Response) => {
   res.json(await listCertificates());
 });
 
-app.delete("/api/certificates/:hash", requireAdmin, async (req, res) => {
-  const hash = req.params.hash.toLowerCase();
+app.delete("/api/certificates/:hash", requireAdmin, async (req: Request, res: Response) => {
+  const hash = String(req.params.hash).toLowerCase();
   const { rows } = await pool.query("SELECT * FROM certificates WHERE LOWER(hash) = $1", [hash]);
   const existing = rows[0];
   if (!existing) {
@@ -522,13 +525,13 @@ app.delete("/api/certificates/:hash", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.delete("/api/activity", requireAdmin, async (req, res) => {
+app.delete("/api/activity", requireAdmin, async (req: Request, res: Response) => {
   await pool.query("DELETE FROM activity");
   console.log("Activity log cleared");
   res.json({ success: true });
 });
 
-app.get("/api/certificates/download", async (req, res) => {
+app.get("/api/certificates/download", async (req: Request, res: Response) => {
   const certs = await listCertificates();
   const data = certs.map(d => ({
     Name: d.name,
@@ -561,14 +564,14 @@ app.get("/api/certificates/download", async (req, res) => {
   }
 });
 
-app.get("/api/dashboard/stats", async (req, res) => {
+app.get("/api/dashboard/stats", async (req: Request, res: Response) => {
   const [{ total }] = (await pool.query("SELECT COUNT(*)::int AS total FROM certificates")).rows;
   const [{ today }] = (await pool.query("SELECT COUNT(*)::int AS today FROM certificates WHERE timestamp::date = CURRENT_DATE")).rows;
   const { rows: recent } = await pool.query(`SELECT ${CERT_COLS} FROM certificates ORDER BY timestamp DESC LIMIT 5`);
   res.json({ total, today, recent });
 });
 
-app.get("/api/dashboard/analytics", async (req, res) => {
+app.get("/api/dashboard/analytics", async (req: Request, res: Response) => {
   const [{ totalDepartments }] = (await pool.query("SELECT COUNT(*)::int AS \"totalDepartments\" FROM departments")).rows;
   const [{ totalResults }] = (await pool.query("SELECT COUNT(*)::int AS \"totalResults\" FROM results")).rows;
   const { rows: byDepartment } = await pool.query(
@@ -577,7 +580,7 @@ app.get("/api/dashboard/analytics", async (req, res) => {
   const { rows: rawBySemester } = await pool.query(
     "SELECT semester FROM results"
   );
-  const semCounts = {};
+  const semCounts: Record<string, number> = {};
   rawBySemester.forEach(r => {
     const s = normalizeSemester(r.semester);
     semCounts[s || "Unknown"] = (semCounts[s || "Unknown"] || 0) + 1;
@@ -594,13 +597,13 @@ app.get("/api/dashboard/analytics", async (req, res) => {
   );
   const byDayAsc = byDay.reverse();
   const { rows: issueCounts } = await pool.query("SELECT status, COUNT(*)::int AS count FROM issues GROUP BY status");
-  const issues = { open: 0, resolved: 0, rejected: 0 };
+  const issues: Record<string, number> = { open: 0, resolved: 0, rejected: 0 };
   issueCounts.forEach(r => { if (issues[r.status] != null) issues[r.status] = r.count; });
   issues.total = issueCounts.reduce((a, r) => a + r.count, 0);
   res.json({ totalDepartments, totalResults, byDepartment, bySemester: bySemesterFull, byDay: byDayAsc, departments: departments.map(d => d.name), issues });
 });
 
-app.post("/api/certificates/bulk-upload", upload.single("file"), async (req, res) => {
+app.post("/api/certificates/bulk-upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     const ext = path.extname(req.file.originalname).toLowerCase();
@@ -612,7 +615,7 @@ app.post("/api/certificates/bulk-upload", upload.single("file"), async (req, res
       const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim().toLowerCase());
       for (let i = 1; i < lines.length; i++) {
         const vals = lines[i].split(",").map(v => v.replace(/^"|"$/g, "").trim());
-        const row = {};
+        const row: Record<string, string> = {};
         headers.forEach((h, j) => row[h] = vals[j] || "");
         const rollKey = headers.find(h => h === "rollnumber" || h === "roll number" || h === "roll" || h === "rollno");
         if (rollKey) row.rollNumber = row[rollKey];
@@ -621,8 +624,8 @@ app.post("/api/certificates/bulk-upload", upload.single("file"), async (req, res
     } else if (ext === ".xlsx") {
       const wb = XLSX.read(req.file.buffer);
       const ws = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(ws, { defval: "" }).map(raw => {
-        const row = {};
+      rows = XLSX.utils.sheet_to_json(ws, { defval: "" }).map((raw: any) => {
+        const row: Record<string, string> = {};
         Object.keys(raw).forEach(k => {
           const key = String(k).toLowerCase().replace(/\s+/g, "");
           row[key] = raw[k];
@@ -637,13 +640,13 @@ app.post("/api/certificates/bulk-upload", upload.single("file"), async (req, res
     }
     if (rows.length === 0) return res.status(400).json({ error: "No valid rows found" });
     res.json({ count: rows.length, rows });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Bulk upload error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/certificates/bulk-save", async (req, res) => {
+app.post("/api/certificates/bulk-save", async (req: Request, res: Response) => {
   const { certificates } = req.body;
   if (!Array.isArray(certificates) || certificates.length === 0) {
     return res.status(400).json({ error: "No certificates to save" });
@@ -668,12 +671,12 @@ app.post("/api/certificates/bulk-save", async (req, res) => {
   res.json({ success: true, saved });
 });
 
-app.get("/api/departments", async (req, res) => {
+app.get("/api/departments", async (req: Request, res: Response) => {
   const { rows } = await pool.query("SELECT name FROM departments ORDER BY name");
   res.json(rows.map(r => r.name));
 });
 
-app.post("/api/departments", requireAdmin, async (req, res) => {
+app.post("/api/departments", requireAdmin, async (req: Request, res: Response) => {
   const { name } = req.body || {};
   const trimmed = String(name || "").trim();
   if (!trimmed) return res.status(400).json({ error: "Department name is required" });
@@ -684,13 +687,13 @@ app.post("/api/departments", requireAdmin, async (req, res) => {
   res.json({ success: true, departments: rows.map(r => r.name) });
 });
 
-app.delete("/api/departments/:name", requireAdmin, async (req, res) => {
-  const target = decodeURIComponent(req.params.name);
+app.delete("/api/departments/:name", requireAdmin, async (req: Request, res: Response) => {
+  const target = decodeURIComponent(String(req.params.name));
   const { rows: existing } = await pool.query("SELECT * FROM departments WHERE name = $1", [target]);
   if (!existing.length) return res.status(404).json({ error: "Department not found" });
   await pool.query("DELETE FROM departments WHERE name = $1", [target]);
   const delRes = await pool.query("DELETE FROM results WHERE department = $1", [target]);
-  const removedResults = delRes.rowCount;
+  const removedResults = delRes.rowCount ?? 0;
   if (removedResults > 0) {
     await logActivity("RESULT_DELETED", { department: target, count: removedResults });
   }
@@ -698,7 +701,7 @@ app.delete("/api/departments/:name", requireAdmin, async (req, res) => {
   res.json({ success: true, departments: rows.map(r => r.name), removedResults });
 });
 
-app.post("/api/results/bulk-upload", upload.single("file"), requirePerm("results"), async (req, res) => {
+app.post("/api/results/bulk-upload", upload.single("file"), requirePerm("results"), async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     const ext = path.extname(req.file.originalname).toLowerCase();
@@ -710,15 +713,15 @@ app.post("/api/results/bulk-upload", upload.single("file"), requirePerm("results
       const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim().toLowerCase().replace(/\s+/g, ""));
       for (let i = 1; i < lines.length; i++) {
         const vals = lines[i].split(",").map(v => v.replace(/^"|"$/g, "").trim());
-        const row = {};
+        const row: Record<string, string> = {};
         headers.forEach((h, j) => row[h] = vals[j] || "");
         rows.push(row);
       }
     } else if (ext === ".xlsx") {
       const wb = XLSX.read(req.file.buffer);
       const ws = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(ws, { defval: "" }).map(raw => {
-        const row = {};
+      rows = XLSX.utils.sheet_to_json(ws, { defval: "" }).map((raw: any) => {
+        const row: Record<string, string> = {};
         Object.keys(raw).forEach(k => {
           const key = String(k).toLowerCase().replace(/\s+/g, "");
           row[key] = raw[k];
@@ -729,7 +732,7 @@ app.post("/api/results/bulk-upload", upload.single("file"), requirePerm("results
       return res.status(400).json({ error: "Unsupported format. Use CSV or XLSX." });
     }
 
-    const norm = (hits) => {
+    const norm = (hits: string[]) => {
       for (const h of hits) {
         const key = Object.keys(rows[0] || {}).find(k => k === h);
         if (key) return key;
@@ -777,13 +780,13 @@ app.post("/api/results/bulk-upload", upload.single("file"), requirePerm("results
     }
 
     res.json({ count: validRows.length, rows: validRows });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Results bulk upload error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/results/bulk-save", requirePerm("results"), async (req, res) => {
+app.post("/api/results/bulk-save", requirePerm("results"), async (req: Request, res: Response) => {
   const { rows } = req.body;
   if (!Array.isArray(rows) || rows.length === 0) {
     return res.status(400).json({ error: "No rows to save" });
@@ -797,7 +800,7 @@ app.post("/api/results/bulk-save", requirePerm("results"), async (req, res) => {
   }
   const { rows: deptRows } = await pool.query("SELECT name FROM departments");
   const deps = new Set(deptRows.map(r => r.name));
-  const groups = {};
+  const groups: Record<string, any> = {};
   for (const row of rows) {
     if (!row.rollNumber || !row.subject) continue;
     const sem = normalizeSemester(row.semester || "Sem 1");
@@ -857,9 +860,9 @@ app.post("/api/results/bulk-save", requirePerm("results"), async (req, res) => {
   res.json({ success: true, added, updated, totalStudents: Object.keys(groups).length });
 });
 
-app.get("/api/results/verify", async (req, res) => {
-  const rollNumber = (req.query.rollNumber || "").trim();
-  const semester = (req.query.semester || "").trim();
+app.get("/api/results/verify", async (req: Request, res: Response) => {
+  const rollNumber = (String(req.query.rollNumber) || "").trim();
+  const semester = (String(req.query.semester) || "").trim();
   if (!rollNumber) return res.status(400).json({ error: "Roll Number is required" });
   const isAdmin = await isAdminRequest(req);
   if (!isAdmin) {
@@ -884,13 +887,13 @@ app.get("/api/results/verify", async (req, res) => {
   res.json(rows.map(r => ({ id: r.id, rollNumber: r.rollNumber, name: r.name, department: r.department, semester: r.semester, subjects: parseJson(r.subjects, []) })));
 });
 
-app.get("/api/results", async (req, res) => {
+app.get("/api/results", async (req: Request, res: Response) => {
   const uname = await getUsernameFromReq(req);
   if (!uname) return res.status(401).json({ error: "Login required" });
   const scope = await getDeptScope(req);
-  const q = (req.query.q || "").toLowerCase().trim();
-  const department = (req.query.department || "").trim();
-  const semester = (req.query.semester || "").trim();
+  const q = (String(req.query.q) || "").toLowerCase().trim();
+  const department = (String(req.query.department) || "").trim();
+  const semester = (String(req.query.semester) || "").trim();
   if (department && !deptAllowed(scope, department)) {
     return res.status(403).json({ error: "You do not have access to this department" });
   }
@@ -916,7 +919,7 @@ app.get("/api/results", async (req, res) => {
   res.json(rows.map(r => ({ ...r, subjects: parseJson(r.subjects, []) })));
 });
 
-app.post("/api/results", requirePerm("results"), async (req, res) => {
+app.post("/api/results", requirePerm("results"), async (req: Request, res: Response) => {
   const { rollNumber, name, department, semester, aadhaar, mobile, subjects } = req.body || {};
   const sem = normalizeSemester(semester || "");
   if (!rollNumber || !String(rollNumber).trim()) return res.status(400).json({ error: "Roll Number is required" });
@@ -956,7 +959,7 @@ app.post("/api/results", requirePerm("results"), async (req, res) => {
   res.json({ success: true, result: entry });
 });
 
-app.put("/api/results/:id", requirePerm("results"), async (req, res) => {
+app.put("/api/results/:id", requirePerm("results"), async (req: Request, res: Response) => {
   const { rows } = await pool.query("SELECT * FROM results WHERE id = $1", [req.params.id]);
   if (rows.length === 0) return res.status(404).json({ error: "Result not found" });
   const existing = rows[0];
@@ -992,7 +995,7 @@ app.put("/api/results/:id", requirePerm("results"), async (req, res) => {
   res.json({ success: true, result: { id: existing.id, ...updated, timestamp: existing.timestamp } });
 });
 
-app.delete("/api/results/:id", requirePerm("results"), async (req, res) => {
+app.delete("/api/results/:id", requirePerm("results"), async (req: Request, res: Response) => {
   const { rows } = await pool.query("SELECT * FROM results WHERE id = $1", [req.params.id]);
   if (rows.length === 0) return res.status(404).json({ error: "Result not found" });
   const scope = await getDeptScope(req);
@@ -1005,7 +1008,7 @@ app.delete("/api/results/:id", requirePerm("results"), async (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/issues", async (req, res) => {
+app.post("/api/issues", async (req: Request, res: Response) => {
   const { rollNumber, semester, message } = req.body || {};
   if (!message || !String(message).trim()) return res.status(400).json({ error: "Issue description is required" });
   if (rollNumber && !String(rollNumber).trim()) return res.status(400).json({ error: "Roll Number is required" });
@@ -1017,8 +1020,8 @@ app.post("/api/issues", async (req, res) => {
   res.json({ success: true, id: rows[0].id });
 });
 
-app.get("/api/issues", requirePerm("issues"), async (req, res) => {
-  const q = (req.query.q || "").toLowerCase().trim();
+app.get("/api/issues", requirePerm("issues"), async (req: Request, res: Response) => {
+  const q = (String(req.query.q) || "").toLowerCase().trim();
   const rows = q
     ? (await pool.query(
         "SELECT * FROM issues WHERE LOWER(message) LIKE $1 OR LOWER(\"rollNumber\") LIKE $2 ORDER BY timestamp DESC",
@@ -1031,7 +1034,7 @@ app.get("/api/issues", requirePerm("issues"), async (req, res) => {
   })));
 });
 
-app.patch("/api/issues/:id", requirePerm("issues"), async (req, res) => {
+app.patch("/api/issues/:id", requirePerm("issues"), async (req: Request, res: Response) => {
   const status = req.body && req.body.status;
   if (!status || !["open", "resolved", "rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
@@ -1042,15 +1045,15 @@ app.patch("/api/issues/:id", requirePerm("issues"), async (req, res) => {
   res.json({ success: true });
 });
 
-app.delete("/api/issues/:id", requirePerm("issues"), async (req, res) => {
+app.delete("/api/issues/:id", requirePerm("issues"), async (req: Request, res: Response) => {
   const { rows } = await pool.query("DELETE FROM issues WHERE id = $1 RETURNING id", [req.params.id]);
   if (rows.length === 0) return res.status(404).json({ error: "Issue not found" });
   await logActivity("ISSUE_DELETED", { id: req.params.id });
   res.json({ success: true });
 });
 
-app.get("/api/activity", async (req, res) => {
-  const q = (req.query.q || "").toLowerCase().trim();
+app.get("/api/activity", async (req: Request, res: Response) => {
+  const q = (String(req.query.q) || "").toLowerCase().trim();
   const rows = q
     ? (await pool.query(
         "SELECT * FROM activity WHERE LOWER(type) LIKE $1 OR LOWER(details) LIKE $2 ORDER BY timestamp DESC",
@@ -1060,13 +1063,13 @@ app.get("/api/activity", async (req, res) => {
   res.json(rows.map(r => ({ type: r.type, details: parseJson(r.details, {}), timestamp: r.timestamp })));
 });
 
-app.get("/api/brand", async (req, res) => {
+app.get("/api/brand", async (req: Request, res: Response) => {
   const { rows } = await pool.query("SELECT * FROM brand WHERE id = 1");
   if (rows.length === 0) return res.json({ ...DEFAULT_BRAND });
   res.json({ name: rows[0].name, shortName: rows[0].shortName, logo: rows[0].logo });
 });
 
-app.put("/api/brand", async (req, res) => {
+app.put("/api/brand", async (req: Request, res: Response) => {
   const { name, shortName, logo } = req.body || {};
   const { rows } = await pool.query("SELECT * FROM brand WHERE id = 1");
   const brand = rows.length ? rows[0] : { ...DEFAULT_BRAND };
@@ -1086,7 +1089,8 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 10;
 const loginAttempts = new Map();
 
-app.post("/api/admin/login", async (req, res) => {
+app.post("/api/admin/login", async (req: Request, res: Response) => {
+  const { username, password } = req.body || {};
   const key = req.ip || "unknown";
   const now = Date.now();
   const rec = loginAttempts.get(key);
@@ -1094,7 +1098,6 @@ app.post("/api/admin/login", async (req, res) => {
     reportEvent("login_rate_limit", "critical", "Login rate limit hit — account/IP temporarily locked", username, key);
     return res.status(429).json({ success: false, error: "Too many login attempts. Try again in 15 minutes." });
   }
-  const { username, password } = req.body || {};
   const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [username || ""]);
   const u = rows[0];
   if (u && verifyPass(u.password, password)) {
@@ -1117,12 +1120,12 @@ app.post("/api/admin/login", async (req, res) => {
   }
 });
 
-app.get("/api/users", requireAdmin, async (req, res) => {
+app.get("/api/users", requireAdmin, async (req: Request, res: Response) => {
   const { rows } = await pool.query('SELECT username, role, permissions, departments, "createdAt" FROM users');
   res.json(rows.map(u => ({ username: u.username, role: u.role || "admin", permissions: parsePerms(u.permissions), departments: parseDepts(u.departments), createdAt: u.createdAt })));
 });
 
-app.post("/api/users", requireAdmin, async (req, res) => {
+app.post("/api/users", requireAdmin, async (req: Request, res: Response) => {
   const { username, password, role, permissions, departments } = req.body || {};
   if (!username || !String(username).trim()) return res.status(400).json({ error: "Username is required" });
   if (!password || String(password).length < 4) return res.status(400).json({ error: "Password must be at least 4 characters" });
@@ -1140,7 +1143,7 @@ app.post("/api/users", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.put("/api/users/:username", requireAdmin, async (req, res) => {
+app.put("/api/users/:username", requireAdmin, async (req: Request, res: Response) => {
   const uname = req.params.username;
   const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [uname]);
   if (rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -1167,7 +1170,7 @@ app.put("/api/users/:username", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.delete("/api/users/:username", requireAdmin, async (req, res) => {
+app.delete("/api/users/:username", requireAdmin, async (req: Request, res: Response) => {
   const uname = req.params.username;
   const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [uname]);
   if (rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -1182,7 +1185,7 @@ app.delete("/api/users/:username", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/certificates/blockchain", async (req, res) => {
+app.post("/api/certificates/blockchain", async (req: Request, res: Response) => {
   try {
     const { hash, name, ipfsHash } = req.body;
     if (!hash || !name || !ipfsHash) {
@@ -1194,15 +1197,15 @@ app.post("/api/certificates/blockchain", async (req, res) => {
     const receipt = await tx.wait();
     console.log(`Tx confirmed in block ${receipt.blockNumber}`);
     res.json({ success: true, txHash: tx.hash, blockNumber: receipt.blockNumber });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Blockchain tx failed:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ---------- Campus Monitor: agent endpoint (called by other campus apps) ----------
-app.post("/api/agent/event", async (req, res) => {
-  const provided = (req.headers["x-monitor-token"] || "").trim();
+app.post("/api/agent/event", async (req: Request, res: Response) => {
+  const provided = String(req.headers["x-monitor-token"] || "").trim();
   if (!MONITOR_AGENT_TOKEN || provided !== MONITOR_AGENT_TOKEN) {
     return res.status(403).json({ error: "Invalid agent token" });
   }
@@ -1215,7 +1218,7 @@ app.post("/api/agent/event", async (req, res) => {
 });
 
 // ---------- Campus Monitor: admin API ----------
-app.get("/api/monitor/stats", requirePerm("monitor"), async (req, res) => {
+app.get("/api/monitor/stats", requirePerm("monitor"), async (req: Request, res: Response) => {
   const apps = await pool.query("SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE enabled)::int AS enabled FROM monitor_apps");
   const online = await pool.query(`
     SELECT COUNT(*)::int AS c FROM monitor_apps m
@@ -1244,7 +1247,7 @@ app.get("/api/monitor/stats", requirePerm("monitor"), async (req, res) => {
   });
 });
 
-app.get("/api/monitor/apps", requirePerm("monitor"), async (req, res) => {
+app.get("/api/monitor/apps", requirePerm("monitor"), async (req: Request, res: Response) => {
   const { rows } = await pool.query(`
     SELECT m.id, m.name, m.app_key, m.url, m.type, m.department, m.notes, m.enabled, m."createdAt",
       m.ropa_status, m.ropa_owner, m.ropa_notes, m.ropa_updated_at,
@@ -1261,7 +1264,7 @@ app.get("/api/monitor/apps", requirePerm("monitor"), async (req, res) => {
   res.json(rows);
 });
 
-app.post("/api/monitor/apps", requireAdmin, async (req, res) => {
+app.post("/api/monitor/apps", requireAdmin, async (req: Request, res: Response) => {
   const { name, app_key: appKey, url, type, department, notes, enabled,
           ropa_status, ropa_owner, ropa_notes, dpia_status, dpia_owner, dpia_notes,
           dpdp_status, dpdp_owner, dpdp_notes } = req.body || {};
@@ -1290,13 +1293,13 @@ app.post("/api/monitor/apps", requireAdmin, async (req, res) => {
        pStatus, String(dpdp_owner || "").slice(0, 100), dpdp_notes || "", pnow]
     );
     res.status(201).json(rows[0]);
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === "23505") return res.status(400).json({ error: "app key already in use" });
     throw e;
   }
 });
 
-app.put("/api/monitor/apps/:id", requirePerm("monitor"), async (req, res) => {
+app.put("/api/monitor/apps/:id", requirePerm("monitor"), async (req: Request, res: Response) => {
   const { name, url, type, department, notes, enabled,
           ropa_status, ropa_owner, ropa_notes, dpia_status, dpia_owner, dpia_notes,
           dpdp_status, dpdp_owner, dpdp_notes } = req.body || {};
@@ -1333,14 +1336,14 @@ app.put("/api/monitor/apps/:id", requirePerm("monitor"), async (req, res) => {
   res.json(rows[0]);
 });
 
-app.delete("/api/monitor/apps/:id", requireAdmin, async (req, res) => {
+app.delete("/api/monitor/apps/:id", requireAdmin, async (req: Request, res: Response) => {
   const { rows } = await pool.query("DELETE FROM monitor_apps WHERE id = $1 RETURNING id", [req.params.id]);
   if (rows.length === 0) return res.status(404).json({ error: "App not found" });
   res.json({ success: true });
 });
 
-app.get("/api/monitor/apps/:id/checks", requireAdmin, async (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit || "200", 10), 2000);
+app.get("/api/monitor/apps/:id/checks", requireAdmin, async (req: Request, res: Response) => {
+  const limit = Math.min(parseInt(String(req.query.limit) || "200", 10), 2000);
   const { rows } = await pool.query(
     "SELECT status_code, latency_ms, online, checked_at FROM monitor_checks WHERE app_id = $1 ORDER BY id DESC LIMIT $2",
     [req.params.id, limit]
@@ -1349,7 +1352,7 @@ app.get("/api/monitor/apps/:id/checks", requireAdmin, async (req, res) => {
 });
 
 // ---------- Campus Monitor: background poller ----------
-async function pruneChecks(appId) {
+async function pruneChecks(appId: any) {
   await pool.query(
     `DELETE FROM monitor_checks
      WHERE app_id = $1 AND id < (SELECT id FROM monitor_checks c2 WHERE c2.app_id = $1 ORDER BY c2.id DESC LIMIT 1 OFFSET 1000)`,
@@ -1357,7 +1360,7 @@ async function pruneChecks(appId) {
   );
 }
 
-async function checkMonitoredApp(a) {
+async function checkMonitoredApp(a: any) {
   const started = Date.now();
   let status_code = 0;
   let online = false;
@@ -1367,7 +1370,7 @@ async function checkMonitoredApp(a) {
     const response = await fetch(a.url, { method: "GET", redirect: "manual", signal: controller.signal });
     status_code = response.status;
     online = status_code >= 200 && status_code < 500;
-  } catch (e) {
+  } catch (e: any) {
     online = false;
   } finally {
     clearTimeout(timer);
@@ -1378,7 +1381,7 @@ async function checkMonitoredApp(a) {
       "INSERT INTO monitor_checks (app_id, status_code, latency_ms, online) VALUES ($1, $2, $3, $4)",
       [a.id, status_code, latency, online]
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("Check insert failed:", e.message);
   }
   await pruneChecks(a.id).catch(() => {});
@@ -1398,7 +1401,7 @@ async function pollMonitoredApps() {
   try {
     const { rows } = await pool.query("SELECT * FROM monitor_apps WHERE enabled ORDER BY id");
     apps = rows;
-  } catch (e) {
+  } catch (e: any) {
     console.error("Poll query failed (tables not ready yet):", e.message);
     return;
   }
@@ -1417,7 +1420,7 @@ async function seedMonitorApps() {
       ["Certificate Portal", "certificate-portal", selfUrl]
     );
     console.log("[monitor] seeded default app: Certificate Portal");
-  } catch (e) {
+  } catch (e: any) {
     console.error("[monitor] seed failed:", e.message);
   }
 }
@@ -1433,7 +1436,7 @@ const DPIA_CATEGORIES = [
 const DPIA_LIKELIHOOD = ["rare", "unlikely", "possible", "likely", "almost_certain"];
 const DPIA_IMPACT = ["negligible", "minor", "moderate", "major", "severe"];
 
-function dpiaRiskLevel(likelihood, impact) {
+function dpiaRiskLevel(likelihood: any, impact: any) {
   const li = DPIA_LIKELIHOOD.indexOf(likelihood);
   const im = DPIA_IMPACT.indexOf(impact);
   const score = (Math.max(0, li) + 1) * (Math.max(0, im) + 1);
@@ -1443,7 +1446,7 @@ function dpiaRiskLevel(likelihood, impact) {
   return "low";
 }
 
-function parseJsonArr(v) {
+function parseJsonArr(v: any) {
   if (Array.isArray(v)) return v;
   if (typeof v === "string") { try { return JSON.parse(v); } catch { return []; } }
   return [];
@@ -1483,7 +1486,7 @@ const DPIA_DEFAULT_TRANSITIONS = [
   { from: "periodic_review", to: "assessment", label: "Trigger Re-assessment", requireComment: true, requireAdmin: false },
 ];
 
-async function getDpiaWorkflow() {
+async function getDpiaWorkflow(): Promise<{ stages: any[]; transitions: any[] }> {
   const { rows } = await pool.query("SELECT stages, transitions FROM dpia_workflow_config WHERE id = 1");
   if (rows.length) {
     const stages = parseJsonArr(rows[0].stages);
@@ -1502,18 +1505,18 @@ async function getDpiaWorkflow() {
   return defaults;
 }
 
-function dpiaStageMeta(stage, stages) {
-  const s = stages.find(x => x.id === stage);
+function dpiaStageMeta(stage: any, stages: any) {
+  const s = stages.find((x: any) => x.id === stage);
   return { id: stage, label: s ? s.label : stage.replace(/_/g, " "), color: s ? s.color : "#64748b" };
 }
 
-function dpiaStageToStatus(stage) {
+function dpiaStageToStatus(stage: any) {
   if (stage === "active" || stage === "periodic_review") return "completed";
   if (stage === "draft") return "draft";
   return "in_progress";
 }
 
-async function dpiaAudit(assessmentId, action, fromStage, toStage, username, comment, meta) {
+async function dpiaAudit(assessmentId: any, action: any, fromStage: any, toStage: any, username: any, comment: any, meta: any) {
   await pool.query(
     `INSERT INTO dpia_audit_log (assessment_id, action, from_stage, to_stage, username, comment, meta, "createdAt")
      VALUES ($1, $2, $3, $4, $5, $6, $7, now())`,
@@ -1522,23 +1525,23 @@ async function dpiaAudit(assessmentId, action, fromStage, toStage, username, com
   );
 }
 
-app.get("/api/dpia/workflow", requirePerm("dpia"), async (req, res) => {
+app.get("/api/dpia/workflow", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     res.json(await getDpiaWorkflow());
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA workflow config error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.put("/api/dpia/workflow", requireAdmin, async (req, res) => {
+app.put("/api/dpia/workflow", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { stages, transitions } = req.body || {};
-    const cleanStages = (parseJsonArr(stages) || []).filter(s => s && s.id).map(s => ({
+    const cleanStages = (parseJsonArr(stages) || []).filter((s: any) => s && s.id).map((s: any) => ({
       id: String(s.id).trim(), label: String(s.label || s.id).slice(0, 60), color: String(s.color || "#64748b")
     }));
-    const stageIds = new Set(cleanStages.map(s => s.id));
-    const cleanTransitions = (parseJsonArr(transitions) || []).filter(t => t && stageIds.has(t.from) && stageIds.has(t.to)).map(t => ({
+    const stageIds = new Set(cleanStages.map((s: any) => s.id));
+    const cleanTransitions = (parseJsonArr(transitions) || []).filter((t: any) => t && stageIds.has(t.from) && stageIds.has(t.to)).map((t: any) => ({
       from: t.from, to: t.to,
       label: String(t.label || `${t.from} → ${t.to}`).slice(0, 80),
       requireComment: !!t.requireComment, requireAdmin: !!t.requireAdmin
@@ -1551,13 +1554,13 @@ app.put("/api/dpia/workflow", requireAdmin, async (req, res) => {
       [JSON.stringify(cleanStages), JSON.stringify(cleanTransitions), uname]
     );
     res.json({ success: true, stages: cleanStages, transitions: cleanTransitions });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA workflow config save error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/api/dpia/dashboard", requireAdmin, async (req, res) => {
+app.get("/api/dpia/dashboard", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [{ total }] = (await pool.query("SELECT COUNT(*)::int AS total FROM dpia_assessments")).rows;
     const { rows: byStatus } = await pool.query("SELECT status, COUNT(*)::int AS count FROM dpia_assessments GROUP BY status");
@@ -1578,15 +1581,15 @@ app.get("/api/dpia/dashboard", requireAdmin, async (req, res) => {
     const overdueNow = riskRows.filter(r => r.status !== "resolved" && r.due_date && new Date(r.due_date) < new Date());
 
     // Overdue remediation = unresolved risks past due date OR pending assessments past due
-    const { rows: overdueAssess } = await pool.query(
+    const [{ c: overdueAssess }] = (await pool.query(
       "SELECT COUNT(*)::int AS c FROM dpia_assessments WHERE status != 'completed' AND due_date IS NOT NULL AND due_date < now()"
-    );
+    )).rows;
 
     const [{ c: thirdPartyCount }] = (await pool.query("SELECT COUNT(*)::int AS c FROM dpia_assessments WHERE third_party")).rows;
     const { rows: byCategory } = await pool.query("SELECT data_categories FROM dpia_assessments");
-    const catCounts = {};
+    const catCounts: Record<string, number> = {};
     byCategory.forEach(r => {
-      parseJsonArr(r.data_categories).forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; });
+      parseJsonArr(r.data_categories).forEach((c: any) => { catCounts[c] = (catCounts[c] || 0) + 1; });
     });
     const dataCategories = Object.entries(catCounts).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count);
 
@@ -1614,7 +1617,7 @@ app.get("/api/dpia/dashboard", requireAdmin, async (req, res) => {
       open, completed,
       highRiskProcessing: highRiskRows.length,
       openPrivacyRisks: openRisks.length,
-      overdueRemediation: overdueNow.length + overdueAssess.c,
+      overdueRemediation: overdueNow.length + (overdueAssess || 0),
       thirdPartyProcessing: thirdPartyCount,
       dataCategories,
       byUnit: byUnit.map(r => ({ unit: r.unit, status: r.status, count: r.count })),
@@ -1627,25 +1630,25 @@ app.get("/api/dpia/dashboard", requireAdmin, async (req, res) => {
       byStage,
       workflow: { stages: workflow.stages, transitions: workflow.transitions }
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA dashboard error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/api/dpia", requirePerm("dpia"), async (req, res) => {
+app.get("/api/dpia", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT ${DPIA_ASSESSMENT_COLS} FROM dpia_assessments ORDER BY "createdAt" DESC`
     );
     res.json(rows);
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA list error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/api/dpia/report", requireAdmin, async (req, res) => {
+app.get("/api/dpia/report", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [{ total }] = (await pool.query("SELECT COUNT(*)::int AS total FROM dpia_assessments")).rows;
     const [{ completed }] = (await pool.query("SELECT COUNT(*)::int AS completed FROM dpia_assessments WHERE status = 'completed'")).rows;
@@ -1703,13 +1706,13 @@ app.get("/api/dpia/report", requireAdmin, async (req, res) => {
 
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.send(lines.join("\n"));
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA report error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
+app.get("/api/dpia/:id", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT ${DPIA_ASSESSMENT_COLS} FROM dpia_assessments WHERE id = $1`,
@@ -1729,13 +1732,13 @@ app.get("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
       [req.params.id]
     );
     res.json({ ...rows[0], risks, audit });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA detail error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post("/api/dpia", requirePerm("dpia"), async (req, res) => {
+app.post("/api/dpia", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { title, description, businessUnit, status, stage, riskLevel, dataCategories, thirdParty, thirdPartyName, startDate, dueDate, completedAt, risks } = req.body || {};
     if (!title || !String(title).trim()) return res.status(400).json({ error: "Title is required" });
@@ -1766,18 +1769,18 @@ app.post("/api/dpia", requirePerm("dpia"), async (req, res) => {
          r.status || "open", r.remediation || "", r.dueDate || null]
       );
     }
-    if (parseJsonArr(risks).some(r => r && r.description)) {
-      await dpiaAudit(id, "risk_added", rowStage, rowStage, uname, "Initial risks recorded", { count: parseJsonArr(risks).filter(r => r && r.description).length });
+    if (parseJsonArr(risks).some((r: any) => r && r.description)) {
+      await dpiaAudit(id, "risk_added", rowStage, rowStage, uname, "Initial risks recorded", { count: parseJsonArr(risks).filter((r: any) => r && r.description).length });
     }
     await logActivity("DPIA_CREATED", { user: uname, title: title.trim(), id });
     res.status(201).json({ success: true, id, stage: rowStage });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA create error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.put("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
+app.put("/api/dpia/:id", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { title, description, businessUnit, status, stage, riskLevel, dataCategories, thirdParty, thirdPartyName, startDate, dueDate, completedAt, risks } = req.body || {};
     if (!title || !String(title).trim()) return res.status(400).json({ error: "Title is required" });
@@ -1824,13 +1827,13 @@ app.put("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
     }
     await logActivity("DPIA_UPDATED", { user: uname, title: title.trim(), id: req.params.id });
     res.json({ success: true });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA update error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post("/api/dpia/:id/risk", requirePerm("dpia"), async (req, res) => {
+app.post("/api/dpia/:id/risk", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { description, likelihood, impact, status, remediation, dueDate } = req.body || {};
     if (!description) return res.status(400).json({ error: "Description required" });
@@ -1846,13 +1849,13 @@ app.post("/api/dpia/:id/risk", requirePerm("dpia"), async (req, res) => {
     await dpiaAudit(req.params.id, "risk_added", rowStage, rowStage, uname, "Risk added: " + description, { riskLevel: level });
     await logActivity("DPIA_RISK_UPDATED", { user: uname, id: req.params.id, detail: "Risk added" });
     res.status(201).json({ success: true, riskLevel: level });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA risk create error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.put("/api/dpia/risk/:riskId", requirePerm("dpia"), async (req, res) => {
+app.put("/api/dpia/risk/:riskId", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { status, remediation, dueDate, resolvedAt } = req.body || {};
     if (!DPIA_RISK_LEVELS.length) { /* noop */ }
@@ -1872,13 +1875,13 @@ app.put("/api/dpia/risk/:riskId", requirePerm("dpia"), async (req, res) => {
       `Risk updated (status: ${status || "open"})${remediation ? " — remediation added" : ""}`, { status: status || "open" });
     await logActivity("DPIA_RISK_UPDATED", { user: uname, id: req.params.riskId, detail: "Risk updated" });
     res.json({ success: true });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA risk update error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post("/api/dpia/:id/transition", requirePerm("dpia"), async (req, res) => {
+app.post("/api/dpia/:id/transition", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { to, comment } = req.body || {};
     if (!to) return res.status(400).json({ error: "Target stage is required" });
@@ -1910,13 +1913,13 @@ app.post("/api/dpia/:id/transition", requirePerm("dpia"), async (req, res) => {
       { user: uname, title: cur[0].title, id: req.params.id, from, to }
     );
     res.json({ success: true, stage: to, status: nextStatus, action, from, via: txn.label });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA transition error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.delete("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
+app.delete("/api/dpia/:id", requirePerm("dpia"), async (req: Request, res: Response) => {
   try {
     const { rows } = await pool.query("SELECT title, stage FROM dpia_assessments WHERE id = $1", [req.params.id]);
     const uname = (await getUsernameFromReq(req)) || "";
@@ -1927,16 +1930,16 @@ app.delete("/api/dpia/:id", requirePerm("dpia"), async (req, res) => {
     await pool.query("DELETE FROM dpia_assessments WHERE id = $1", [req.params.id]);
     await logActivity("DPIA_DELETED", { user: uname, title, id: req.params.id });
     res.json({ success: true });
-  } catch (e) {
+  } catch (e: any) {
     console.error("DPIA delete error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-const buildPath = path.join(__dirname, "build");
+const buildPath = path.join(__dirname, "..", "build");
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
-  app.use((req, res) => {
+  app.use((req: Request, res: Response) => {
     if (req.path.startsWith("/api/")) return res.status(404).json({ error: "Not found" });
     res.sendFile(path.join(buildPath, "index.html"));
   });
@@ -1949,7 +1952,7 @@ async function start() {
   await init();
   await seedMonitorApps();
   await ensureDefaultAdmin();
-  const server = app.listen(PORT, HOST, () => {
+  const server = app.listen(Number(PORT), HOST, () => {
     console.log(`Server running at http://${HOST}:${PORT}`);
   });
   server.on("error", (err) => {
@@ -1967,4 +1970,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { hashPass, verifyPass, parseJson, CERT_COLS, DEFAULT_BRAND };
+export { hashPass, verifyPass, parseJson, CERT_COLS, DEFAULT_BRAND };

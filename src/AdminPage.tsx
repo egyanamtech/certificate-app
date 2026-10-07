@@ -32,17 +32,17 @@ const ROLE_OPTIONS = [
   { id: "admin", label: "Admin", permissions: [] },
 ];
 
-const roleLabel = (id) => {
+const roleLabel = (id: any) => {
   const r = ROLE_OPTIONS.find(o => o.id === id);
   return r ? r.label : "User";
 };
 
-const roleDefaults = (id) => {
+const roleDefaults = (id: any) => {
   const r = ROLE_OPTIONS.find(o => o.id === id);
-  return Array.isArray(r.permissions) ? [...r.permissions] : [];
+  return r && Array.isArray(r.permissions) ? [...r.permissions] : [];
 };
 
-function BarChart({ data, height = 180 }) {
+function BarChart({ data, height = 180 }: { data?: any[] | null; height?: number }) {
   const max = Math.max(1, ...(data || []).map(d => d.value));
   return (
     <div className="bar-chart" style={{ height }}>
@@ -69,7 +69,7 @@ function watchSessionExpiry() {
   const orig = window.fetch.bind(window);
   window.fetch = async (...args) => {
     const res = await orig(...args);
-    const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
+    const url = typeof args[0] === "string" ? args[0] : (args[0] as any)?.url || "";
     const hasToken = !!localStorage.getItem("admin_token");
     if (hasToken && url.includes("/api/") && (res.status === 401 || res.status === 403)) {
       try {
@@ -88,7 +88,7 @@ watchSessionExpiry();
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
-function sha256(data) {
+function sha256(data: any) {
   const chars = "0123456789abcdef";
   const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
   const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
@@ -101,7 +101,7 @@ function sha256(data) {
   new DataView(m.buffer).setUint32(ml - 8, len & 0xffffffff, false);
   let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
   for (let i = 0; i < m.length; i += 64) {
-    const W = []; let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    const W: any[] = []; let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
     const dv = new DataView(m.buffer, i, 64);
     for (let t = 0; t < 16; t++) W[t] = dv.getUint32(t * 4, false);
     for (let t = 16; t < 64; t++) {
@@ -122,15 +122,15 @@ function sha256(data) {
   return H.map(v => chars[(v>>>28)&15]+chars[(v>>>24)&15]+chars[(v>>>20)&15]+chars[(v>>>16)&15]+chars[(v>>>12)&15]+chars[(v>>>8)&15]+chars[(v>>>4)&15]+chars[v&15]).join("");
 }
 
-export default function AdminPage({ onBack }) {
+export default function AdminPage({ onBack }: { onBack: () => void }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [loginError, setLoginError] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [stats, setStats] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
+  const [stats, setStats] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
   const { theme, toggleTheme } = useTheme();
   const { brand } = useBrand();
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem("admin_role") === "admin");
@@ -253,7 +253,7 @@ export default function AdminPage({ onBack }) {
   const userPerms = JSON.parse(localStorage.getItem("admin_perms") || "[]");
   let userDepts = [];
   try { userDepts = JSON.parse(localStorage.getItem("admin_depts") || "[]"); } catch { userDepts = []; }
-  const can = (id) =>
+  const can = (id: any) =>
     isAdmin ||
     userPerms.includes(id) ||
     (userPerms.length === 0 && !isAdmin && DEFAULT_ACCESS.includes(id));
@@ -309,7 +309,7 @@ export default function AdminPage({ onBack }) {
               {(userDepts || []).length === 0 ? (
                 <span className="badge connected">All</span>
               ) : (
-                userDepts.map((d, i) => (
+                userDepts.map((d: any, i: any) => (
                   <span key={i} className="badge" style={{ fontSize: "10px", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d}>
                     {d}
                   </span>
@@ -366,7 +366,7 @@ export default function AdminPage({ onBack }) {
   );
 }
 
-function Dashboard({ stats, analytics, onRefresh }) {
+function Dashboard({ stats, analytics, onRefresh }: { stats: any; analytics: any; onRefresh: () => void }) {
   if (!stats) {
     return <div className="section"><p style={{ color: "#64748b" }}>Loading stats...</p></div>;
   }
@@ -422,18 +422,18 @@ function Dashboard({ stats, analytics, onRefresh }) {
         <>
           <div className="chart-panel" style={{ marginTop: "20px" }}>
             <h3>Certificates Issued (Last 7 Days)</h3>
-            <BarChart height={240} data={(analytics.byDay || []).map(d => ({ label: d.day.slice(5), value: d.count }))} />
+            <BarChart height={240} data={(analytics.byDay || []).map((d: any) => ({ label: d.day.slice(5), value: d.count }))} />
           </div>
 
           <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "20px" }}>
             <div className="chart-panel" style={{ flex: "1", minWidth: "300px" }}>
               <h3>Department-wise Results</h3>
-              <BarChart height={220} data={(analytics.byDepartment || []).map(d => ({ label: d.department, value: d.count }))} />
+              <BarChart height={220} data={(analytics.byDepartment || []).map((d: any) => ({ label: d.department, value: d.count }))} />
             </div>
 
             <div className="chart-panel" style={{ flex: "1", minWidth: "300px" }}>
               <h3>Semester-wise Results</h3>
-              <BarChart height={220} data={(analytics.bySemester || []).map(s => ({ label: s.semester, value: s.count }))} />
+              <BarChart height={220} data={(analytics.bySemester || []).map((s: any) => ({ label: s.semester, value: s.count }))} />
             </div>
 
             {analytics.issues && (
@@ -455,7 +455,7 @@ function Dashboard({ stats, analytics, onRefresh }) {
 }
 
 function IssueCertificate() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<any>(null);
   const [hash, setHash] = useState("");
   const [ipfsHash, setIpfsHash] = useState("");
   const [status, setStatus] = useState("");
@@ -465,9 +465,9 @@ function IssueCertificate() {
   const [department, setDepartment] = useState("");
   const [year, setYear] = useState("");
   const [email, setEmail] = useState("");
-  const [successPopup, setSuccessPopup] = useState(null);
+  const [successPopup, setSuccessPopup] = useState<any>(null);
 
-  const autoProcessFile = async (selectedFile) => {
+  const autoProcessFile = async (selectedFile: any) => {
     setFile(selectedFile);
     if (!selectedFile) return;
     setStatus("Hashing file...");
@@ -508,7 +508,7 @@ function IssueCertificate() {
         body: JSON.stringify({ hash, name, rollNumber, course, department, year, email, ipfsHash, txHash: data.txHash }),
       });
       setSuccessPopup({ name, hash, rollNumber, txHash: data.txHash });
-    } catch (err) {
+    } catch (err: any) {
       setStatus(`Transaction failed: ${err.message}`);
     }
   };
@@ -546,7 +546,7 @@ function IssueCertificate() {
       <div className="input-group">
         <label>Certificate File (PDF/Image)</label>
         <div className="file-input-wrapper">
-          <input type="file" onChange={(e) => autoProcessFile(e.target.files[0])} />
+          <input type="file" onChange={(e) => autoProcessFile(e.target.files?.[0])} />
         </div>
         {file && <p style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Selected: {file.name}</p>}
       </div>
@@ -612,14 +612,14 @@ function IssueCertificate() {
 }
 
 function BulkUpload() {
-  const [csvFile, setCsvFile] = useState(null);
-  const [parsedRows, setParsedRows] = useState([]);
-  const [certFiles, setCertFiles] = useState([]);
+  const [csvFile, setCsvFile] = useState<any>(null);
+  const [parsedRows, setParsedRows] = useState<any[]>([]);
+  const [certFiles, setCertFiles] = useState<any[]>([]);
   const [bulkStatus, setBulkStatus] = useState("");
-  const [bulkResults, setBulkResults] = useState([]);
-  const [bulkPopup, setBulkPopup] = useState(null);
+  const [bulkResults, setBulkResults] = useState<any[]>([]);
+  const [bulkPopup, setBulkPopup] = useState<any>(null);
 
-  const handleCsvFile = async (e) => {
+  const handleCsvFile = async (e: any) => {
     const f = e.target.files[0];
     if (!f) return;
     setCsvFile(f);
@@ -638,17 +638,17 @@ function BulkUpload() {
       } else {
         setBulkStatus("Error: " + (data.error || "Parse failed"));
       }
-    } catch (err) {
+    } catch (err: any) {
       setBulkStatus("Upload error: " + err.message);
     }
   };
 
-  const handleCertFiles = (e) => {
+  const handleCertFiles = (e: any) => {
     const files = Array.from(e.target.files || []);
     setCertFiles(files);
   };
 
-  const matchFileForRow = (row) => {
+  const matchFileForRow = (row: any) => {
     const roll = (row.rollNumber || "").toString().toLowerCase().trim();
     const name = (row.name || "").toString().toLowerCase().trim();
     for (const f of certFiles) {
@@ -721,7 +721,7 @@ function BulkUpload() {
         certs.push({ hash, name: row.name, rollNumber: row.rollNumber || "", course: row.course || "", department: row.department || "", year: row.year || "", email: row.email || "", ipfsHash, txHash: bcData.txHash });
         setBulkStatus(`[${i + 1}/${parsedRows.length}] ${row.name} - done`);
         if (i < parsedRows.length - 1) await new Promise(r => setTimeout(r, 1500));
-      } catch (err) {
+      } catch (err: any) {
         setBulkStatus(`[${i + 1}/${parsedRows.length}] ${row.name} - failed: ${err.message}`);
         return;
       }
@@ -738,7 +738,7 @@ function BulkUpload() {
       setBulkResults(certs);
       setBulkStatus(`All ${data.saved} certificates processed!`);
       setBulkPopup(certs);
-    } catch (err) {
+    } catch (err: any) {
       setBulkStatus(`Save failed: ${err.message}`);
     }
   };
@@ -763,7 +763,7 @@ function BulkUpload() {
                 {bulkPopup.length} Certificates Issued!
               </h2>
               <div className="results-list">
-                {bulkPopup.map((c, i) => (
+                {bulkPopup.map((c: any, i: any) => (
                   <div key={i} className="result-item" style={{ marginBottom: "6px", padding: "10px" }}>
                     <p style={{ fontSize: "13px" }}><strong>#{i + 1} {c.name}</strong> {c.rollNumber && `(${c.rollNumber})`}</p>
                     <div className="hash-text" style={{ fontSize: "11px" }}>{c.hash}</div>
@@ -835,7 +835,7 @@ function BulkUpload() {
                   const missing = (!row.name || !row.rollNumber);
                   return (
                     <tr key={i} style={missing ? { background: "rgba(239,68,68,0.12)" } : undefined}>
-                      {Object.values(row).map((v, j) => <td key={j} style={missing ? { color: "#f87171" } : undefined}>{v || <em style={{ opacity: 0.5 }}>—</em>}</td>)}
+                      {Object.values(row as any).map((v: any, j: any) => <td key={j} style={missing ? { color: "#f87171" } : undefined}>{v || <em style={{ opacity: 0.5 }}>—</em>}</td>)}
                       <td style={{ color: m ? "#86efac" : "#fbbf24" }}>{m ? "✅ " + m.name : "⚠️ No file"}</td>
                     </tr>
                   );
@@ -926,7 +926,7 @@ function BulkUpload() {
 }
 
 function ActivityLog() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const canAdmin = localStorage.getItem("admin_role") === "admin";
@@ -963,7 +963,7 @@ function ActivityLog() {
     BRAND_UPDATED: { icon: "🏷️", label: "Branding Updated" },
   };
 
-  const infoOf = (t) => infos[t] || { icon: "•", label: t || "Event" };
+  const infoOf = (t: any) => (infos as any)[t] || { icon: "•", label: t || "Event" };
 
   return (
     <div className="section">
@@ -1033,7 +1033,7 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-function PwInput({ value, onChange, placeholder, style }) {
+function PwInput({ value, onChange, placeholder, style }: { value: any; onChange: (e: any) => void; placeholder: string; style?: any }) {
   const [show, setShow] = useState(false);
   return (
     <span className="pw-field" style={style}>
@@ -1049,7 +1049,7 @@ function PwInput({ value, onChange, placeholder, style }) {
 }
 
 function UsersSection() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [nUsername, setNUsername] = useState("");
   const [nPassword, setNPassword] = useState("");
@@ -1060,18 +1060,18 @@ function UsersSection() {
   const [resetFor, setResetFor] = useState("");
   const [resetPass, setResetPass] = useState("");
   const [editAccessFor, setEditAccessFor] = useState("");
-  const [editPerms, setEditPerms] = useState([]);
-  const [nDepts, setNDepts] = useState([]);
-  const [allDepts, setAllDepts] = useState([]);
-  const [editDepts, setEditDepts] = useState([]);
+  const [editPerms, setEditPerms] = useState<any[]>([]);
+  const [nDepts, setNDepts] = useState<any[]>([]);
+  const [allDepts, setAllDepts] = useState<any[]>([]);
+  const [editDepts, setEditDepts] = useState<any[]>([]);
   const [filter, setFilter] = useState("");
 
   const me = localStorage.getItem("admin_user") || "";
 
-  const togglePerm = (list, id, setter) =>
-    setter(list.includes(id) ? list.filter(p => p !== id) : [...list, id]);
+const togglePerm = (list: any, id: any, setter: any) =>
+    setter(list.includes(id) ? list.filter((p: any) => p !== id) : [...list, id]);
 
-  const handleRoleSelect = (e) => {
+const handleRoleSelect = (e: any) => {
     const id = e.target.value;
     setNRole(id);
     if (id === "admin") {
@@ -1105,7 +1105,7 @@ function UsersSection() {
       .catch(() => {});
   }, []);
 
-  const handleCreate = async (e) => {
+  const handleCreate = async (e: any) => {
     e.preventDefault();
     setMsg(""); setErr("");
     if (!nUsername.trim()) return setErr("Username is required");
@@ -1127,7 +1127,7 @@ function UsersSection() {
     } catch { setErr("Create failed"); }
   };
 
-  const handleSaveAccess = async (username) => {
+  const handleSaveAccess = async (username: any) => {
     setErr(""); setMsg("");
     try {
       const res = await fetch(`${API_BASE}/api/users/${username}`, {
@@ -1146,7 +1146,7 @@ function UsersSection() {
     } catch { setErr("Update failed"); }
   };
 
-  const handleRoleChange = async (u, newRole) => {
+  const handleRoleChange = async (u: any, newRole: any) => {
     if (newRole === u.role) return;
     const toAdmin = newRole === "admin";
     if (!window.confirm(`Change "${u.username}" role to "${roleLabel(newRole)}"?${toAdmin ? " (full access)" : ""}`)) return;
@@ -1171,7 +1171,7 @@ function UsersSection() {
     } catch { setErr("Role change failed"); }
   };
 
-  const handleReset = async (username) => {
+  const handleReset = async (username: any) => {
     if (!resetPass || resetPass.length < 4) return setErr("New password must be at least 4 characters");
     setErr(""); setMsg("");
     try {
@@ -1190,7 +1190,7 @@ function UsersSection() {
     } catch { setErr("Update failed"); }
   };
 
-  const handleDeleteUser = async (username) => {
+  const handleDeleteUser = async (username: any) => {
     if (!window.confirm(`Delete user "${username}"?`)) return;
     setErr(""); setMsg("");
     const res = await fetch(`${API_BASE}/api/users/${username}`, { method: "DELETE", headers: authHeaders() });
@@ -1209,8 +1209,8 @@ function UsersSection() {
     u.username.toLowerCase().includes(q) ||
     (u.role || "").toLowerCase().includes(q) ||
     roleLabel(u.role).toLowerCase().includes(q) ||
-    (u.permissions || []).some(p => p.toLowerCase().includes(q)) ||
-    (u.departments || []).some(d => d.toLowerCase().includes(q))
+    (u.permissions || []).some((p: any) => p.toLowerCase().includes(q)) ||
+    (u.departments || []).some((d: any) => d.toLowerCase().includes(q))
   );
 
   return (
@@ -1363,7 +1363,7 @@ function UsersSection() {
                     ) : (
                       <span style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
                         {(u.permissions || []).length === 0 && <em style={{ fontSize: "12px", opacity: 0.6 }}>No access</em>}
-                        {(u.permissions || []).map(p => {
+                        {(u.permissions || []).map((p: any) => {
                           const opt = ACCESS_OPTIONS.find(o => o.id === p);
                           return <span key={p} className="badge" style={{ fontSize: "11px" }}>{opt ? opt.label : p}</span>;
                         })}
@@ -1455,14 +1455,14 @@ function SettingsSection() {
     setPreview(brand.logo);
   }, [brand]);
 
-  const onPickLogo = (e) => {
+  const onPickLogo = (e: any) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (file.size > 800 * 1024) return alert("Logo must be under 800KB");
     const reader = new FileReader();
     reader.onload = () => {
-      setLogo(reader.result);
-      setPreview(reader.result);
+      setLogo(typeof reader.result === "string" ? reader.result : null);
+      setPreview(typeof reader.result === "string" ? reader.result : null);
     };
     reader.readAsDataURL(file);
   };
@@ -1577,7 +1577,7 @@ function SmsGatewayCard() {
   const [templateId, setTemplateId] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [testMobile, setTestMobile] = useState("");
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
@@ -1703,7 +1703,7 @@ function SmsGatewayCard() {
 }
 
 function CertificatesList() {
-  const [certs, setCerts] = useState([]);
+  const [certs, setCerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
@@ -1720,7 +1720,7 @@ function CertificatesList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async (hash, name) => {
+  const handleDelete = async (hash: any, name: any) => {
     if (!window.confirm(`Delete certificate for ${name}?`)) return;
     setDeleting(hash);
     try {
@@ -1815,8 +1815,8 @@ function CertificatesList() {
 
 function VerifySection() {
   const [verifyQuery, setVerifyQuery] = useState("");
-  const [result, setResult] = useState(null);
-  const [results, setResults] = useState(null);
+  const [result, setResult] = useState<any>(null);
+  const [results, setResults] = useState<any>(null);
   const [verifyStatus, setVerifyStatus] = useState("");
 
   const search = async () => {
@@ -1887,7 +1887,7 @@ function VerifySection() {
       {results && results.length > 0 && (
         <div className="result-card" style={{ marginTop: "16px" }}>
           <p><strong>Multiple certificates found:</strong></p>
-          {results.map((r, i) => (
+          {results.map((r: any, i: any) => (
             <div key={i} style={{
               padding: "10px 0", borderBottom: i < results.length - 1 ? "1px solid rgba(148,163,184,0.15)" : "none",
               cursor: "pointer"
@@ -1919,8 +1919,8 @@ function DownloadsSection() {
 }
 
 function ResultsSection() {
-  const [departments, setDepartments] = useState([]);
-  const [results, setResults] = useState([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [formError, setFormError] = useState("");
@@ -1933,8 +1933,8 @@ function ResultsSection() {
     aadhaar: "", mobile: "",
     subjects: [{ subject: "", marks: "", maxMarks: "", grade: "" }]
   });
-  const [editingId, setEditingId] = useState(null);
-  const [bulkRows, setBulkRows] = useState([]);
+  const [editingId, setEditingId] = useState<any>(null);
+  const [bulkRows, setBulkRows] = useState<any[]>([]);
   const [bulkFileName, setBulkFileName] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkError, setBulkError] = useState("");
@@ -1983,7 +1983,7 @@ function ResultsSection() {
     fetchResults();
   }, [fetchResults]);
 
-  const handleBulkFile = async (e) => {
+  const handleBulkFile = async (e: any) => {
     const f = e.target.files[0];
     if (!f) return;
     setBulkFileName(f.name);
@@ -2002,7 +2002,7 @@ function ResultsSection() {
       if (!res.ok) throw new Error(data.error || "Parse failed");
       setBulkRows(data.rows || []);
       setBulkStatus(`Parsed ${data.count} subject rows`);
-    } catch (err) {
+    } catch (err: any) {
       setBulkError(err.message);
     }
   };
@@ -2026,14 +2026,14 @@ function ResultsSection() {
       fetchResults();
       fetchDepartments();
       setTimeout(() => setBulkStatus(""), 4000);
-    } catch (err) {
+    } catch (err: any) {
       setBulkError(err.message);
     } finally {
       setBulkSaving(false);
     }
   };
 
-  const setSubject = (i, key, value) => {
+  const setSubject = (i: any, key: any, value: any) => {
     const next = [...form.subjects];
     next[i] = { ...next[i], [key]: value };
     setForm({ ...form, subjects: next });
@@ -2043,7 +2043,7 @@ function ResultsSection() {
     setForm({ ...form, subjects: [...form.subjects, { subject: "", marks: "", maxMarks: "", grade: "" }] });
   };
 
-  const removeSubjectRow = (i) => {
+  const removeSubjectRow = (i: any) => {
     const next = form.subjects.filter((_, idx) => idx !== i);
     setForm({ ...form, subjects: next.length ? next : [{ subject: "", marks: "", maxMarks: "", grade: "" }] });
   };
@@ -2105,7 +2105,7 @@ function ResultsSection() {
     }
   };
 
-  const deleteResult = async (id) => {
+  const deleteResult = async (id: any) => {
     if (!window.confirm("Delete this result?")) return;
     try {
       const res = await fetch(`${API_BASE}/api/results/${id}`, {
@@ -2119,7 +2119,7 @@ function ResultsSection() {
     }
   };
 
-  const deleteDepartment = async (name) => {
+  const deleteDepartment = async (name: any) => {
     const resultCount = results.filter(r => (r.department || "") === name).length;
     const msg = resultCount > 0
       ? `Remove department "${name}" and its ${resultCount} stored result(s)? This cannot be undone.`
@@ -2142,12 +2142,12 @@ function ResultsSection() {
     }
   };
 
-  const editResult = (r) => {
+  const editResult = (r: any) => {
     setEditingId(r.id);
     setForm({
       rollNumber: r.rollNumber, name: r.name, department: r.department, semester: r.semester,
       aadhaar: r.aadhaar || "", mobile: r.mobile || "",
-      subjects: r.subjects.length ? r.subjects.map(s => ({
+      subjects: r.subjects.length ? r.subjects.map((s: any) => ({
         subject: s.subject, marks: s.marks == null ? "" : s.marks,
         maxMarks: s.maxMarks == null ? "" : s.maxMarks, grade: s.grade || "",
       })) : [{ subject: "", marks: "", maxMarks: "", grade: "" }],
@@ -2367,8 +2367,8 @@ function ResultsSection() {
         ) : (
           <div className="results-list">
             {results.map((r) => {
-              const totalObtained = r.subjects.reduce((s, x) => s + (Number(x.marks) || 0), 0);
-              const totalMax = r.subjects.reduce((s, x) => s + (Number(x.maxMarks) || 0), 0);
+              const totalObtained = r.subjects.reduce((s: any, x: any) => s + (Number(x.marks) || 0), 0);
+              const totalMax = r.subjects.reduce((s: any, x: any) => s + (Number(x.maxMarks) || 0), 0);
               const pct = totalMax ? Math.round((totalObtained / totalMax) * 100) : null;
               return (
                 <div className="result-item" key={r.id}>
@@ -2395,7 +2395,7 @@ function ResultsSection() {
                       <tr><th>Subject</th><th>Marks</th><th>Max</th><th>Grade</th></tr>
                     </thead>
                     <tbody>
-                      {r.subjects.map((s, i) => (
+                      {r.subjects.map((s: any, i: any) => (
                         <tr key={i}>
                           <td>{s.subject}</td>
                           <td>{s.marks ?? "—"}</td>
@@ -2422,7 +2422,7 @@ function ResultsSection() {
 }
 
 function IssuesSection() {
-  const [issues, setIssues] = useState([]);
+  const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
@@ -2436,14 +2436,14 @@ function IssuesSection() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleStatus = async (id, status) => {
+  const handleStatus = async (id: any, status: any) => {
     try {
       await fetch(`${API_BASE}/api/issues/${id}`, { method: "PATCH", headers: { ...authHeaders(), "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
       load();
     } catch { alert("Update failed"); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: any) => {
     if (!window.confirm("Delete this issue?")) return;
     try {
       await fetch(`${API_BASE}/api/issues/${id}`, { method: "DELETE", headers: authHeaders() });
@@ -2454,7 +2454,7 @@ function IssuesSection() {
   const q = filter.toLowerCase().trim();
   const filtered = issues.filter(i => JSON.stringify(i).toLowerCase().includes(q));
 
-  const statusColor = (s) => s === "open" ? "#f59e0b" : s === "resolved" ? "#22c55e" : "#ef4444";
+  const statusColor = (s: any) => s === "open" ? "#f59e0b" : s === "resolved" ? "#22c55e" : "#ef4444";
 
   const counts = {
     open: issues.filter(i => i.status === "open").length,
@@ -2462,13 +2462,13 @@ function IssuesSection() {
     rejected: issues.filter(i => i.status === "rejected").length,
   };
 
-  const semCounts = {};
+  const semCounts: Record<string, number> = {};
   issues.forEach(i => {
     const key = i.semester || "Unknown";
     semCounts[key] = (semCounts[key] || 0) + 1;
   });
 
-  const dayCounts = {};
+  const dayCounts: Record<string, number> = {};
   for (let d = 6; d >= 0; d--) {
     const dt = new Date();
     dt.setDate(dt.getDate() - d);
@@ -2572,7 +2572,7 @@ function IssuesSection() {
 }
 
 function AnalyticsSection() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
@@ -2612,21 +2612,21 @@ function AnalyticsSection() {
       <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "20px" }}>
         <div className="chart-panel" style={{ flex: "1", minWidth: "300px" }}>
           <h3>Certificates Issued (Last 7 Days)</h3>
-          <BarChart height={220} data={(data.byDay || []).map(d => ({ label: d.day.slice(5), value: d.count }))} />
+          <BarChart height={220} data={(data.byDay || []).map((d: any) => ({ label: d.day.slice(5), value: d.count }))} />
         </div>
         <div className="chart-panel" style={{ flex: "1", minWidth: "300px" }}>
           <h3>Department-wise Results</h3>
-          <BarChart height={220} data={(data.byDepartment || []).map(d => ({ label: d.department, value: d.count }))} />
+          <BarChart height={220} data={(data.byDepartment || []).map((d: any) => ({ label: d.department, value: d.count }))} />
         </div>
         <div className="chart-panel" style={{ flex: "1", minWidth: "300px" }}>
           <h3>Semester-wise Results</h3>
-          <BarChart height={220} data={(data.bySemester || []).map(s => ({ label: s.semester, value: s.count }))} />
+          <BarChart height={220} data={(data.bySemester || []).map((s: any) => ({ label: s.semester, value: s.count }))} />
         </div>
       </div>
 
       <h3 style={{ marginTop: "24px" }}>All Departments</h3>
       <div className="stat-card" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        {(data.departments || []).map((name, i) => (
+        {(data.departments || []).map((name: any, i: any) => (
           <span key={i} className="badge">{name}</span>
         ))}
         {(data.departments || []).length === 0 && <p style={{ color: "var(--text-secondary)" }}>No departments added yet.</p>}
@@ -2636,8 +2636,8 @@ function AnalyticsSection() {
 }
 
 function MonitorSection() {
-  const [data, setData] = useState(null);
-  const [apps, setApps] = useState([]);
+  const [data, setData] = useState<any>(null);
+  const [apps, setApps] = useState<any[]>([]);
   const [form, setForm] = useState({ name: "", app_key: "", url: "", type: "web", department: "", notes: "" });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -2659,7 +2659,7 @@ function MonitorSection() {
   const offlineCount = apps.filter(a => a.last_online !== true && a.last_checked).length;
   const downtime = offlineCount;
 
-  const addApp = async (e) => {
+  const addApp = async (e: any) => {
     e.preventDefault();
     setMsg(""); setErr("");
     try {
@@ -2673,10 +2673,10 @@ function MonitorSection() {
       setForm({ name: "", app_key: "", url: "", type: "web", department: "", notes: "" });
       setMsg(`Registered "${d.name}". It will be checked automatically.`);
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const toggleApp = async (a) => {
+  const toggleApp = async (a: any) => {
     try {
       const res = await fetch(`${API_BASE}/api/monitor/apps/${a.id}`, {
         method: "PUT",
@@ -2685,20 +2685,20 @@ function MonitorSection() {
       });
       if (!res.ok) throw new Error("Update failed");
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const deleteApp = async (a) => {
+  const deleteApp = async (a: any) => {
     if (!window.confirm(`Remove "${a.name}" from monitoring? Its history will be deleted.`)) return;
     try {
       const res = await fetch(`${API_BASE}/api/monitor/apps/${a.id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) throw new Error("Delete failed");
       setMsg(`Removed "${a.name}" from monitoring.`);
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const updateCompliance = async (a, field, value) => {
+  const updateCompliance = async (a: any, field: any, value: any) => {
     const comp = field.endsWith("ropa") ? "ROPA" : field.endsWith("dpia") ? "DPIA" : "DPDP";
     const cur = field.endsWith("ropa") ? (a.ropa_status || "not_started")
       : field.endsWith("dpia") ? (a.dpia_status || "not_started")
@@ -2714,10 +2714,10 @@ function MonitorSection() {
       if (!res.ok) throw new Error("Update failed");
       setMsg(`${comp} for "${a.name}" set to ${value.replace(/_/g, " ")}.`);
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const updateOwner = async (a, field, value) => {
+  const updateOwner = async (a: any, field: any, value: any) => {
     const comp = field.endsWith("ropa") ? "ROPA" : field.endsWith("dpia") ? "DPIA" : "DPDP";
     const cur = field.endsWith("ropa") ? (a.ropa_owner || "")
       : field.endsWith("dpia") ? (a.dpia_owner || "")
@@ -2733,21 +2733,21 @@ function MonitorSection() {
       if (!res.ok) throw new Error("Update failed");
       setMsg(`${comp} owner for "${a.name}" updated.`);
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const compBadge = (s) => {
+  const compBadge = (s: any) => {
     const map = { completed: "connected", in_progress: "warn", not_started: "danger" };
-    return `badge ${map[s] || "info"}`;
+    return `badge ${(map as any)[s] || "info"}`;
   };
-  const compLabel = (s) => {
+  const compLabel = (s: any) => {
     const map = { completed: "Completed", in_progress: "In progress", not_started: "Not started" };
-    return map[s] || "N/A";
+    return (map as any)[s] || "N/A";
   };
 
-const sevBadge = (s) => {
+const sevBadge = (s: any) => {
   const map = { info: "info", low: "low", medium: "warn", high: "danger", critical: "critical" };
-  return `badge ${map[s] || "info"}`;
+  return `badge ${(map as any)[s] || "info"}`;
 };
 
 const origin = window.location.origin;
@@ -2945,7 +2945,7 @@ const curlExample = `curl -s -X POST ${origin}/api/agent/event -H "X-Monitor-Tok
               );
             })}
             {apps.length === 0 && (
-              <tr><td colSpan="10" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No applications registered yet.</td></tr>
+              <tr><td colSpan={10} style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No applications registered yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -2990,7 +2990,7 @@ const curlExample = `curl -s -X POST ${origin}/api/agent/event -H "X-Monitor-Tok
             <tr><th>Severity</th><th>Type</th><th>Message</th><th>Application</th><th>User</th><th>Time</th></tr>
           </thead>
           <tbody>
-            {(data && data.recent && data.recent.length > 0 ? data.recent : []).map(ev => (
+            {(data && data.recent && data.recent.length > 0 ? data.recent : []).map((ev: any) => (
               <tr key={ev.id}>
                 <td><span className={sevBadge(ev.severity)}>{ev.severity}</span></td>
                 <td>{ev.type}</td>
@@ -3001,7 +3001,7 @@ const curlExample = `curl -s -X POST ${origin}/api/agent/event -H "X-Monitor-Tok
               </tr>
             ))}
             {!(data && data.recent && data.recent.length) && (
-              <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No security events yet.</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No security events yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -3046,14 +3046,14 @@ const DPIA_DEFAULT_TRANSITIONS = [
   { from: "periodic_review", to: "assessment", label: "Trigger Re-assessment", requireComment: true, requireAdmin: false },
 ];
 
-function riskBadgeColor(level) {
+function riskBadgeColor(level: any) {
   if (level === "critical") return "#ef4444";
   if (level === "high") return "#f97316";
   if (level === "medium") return "#eab308";
   return "#22c55e";
 }
 
-function statusColor(s) {
+function statusColor(s: any) {
   if (s === "completed") return "#22c55e";
   if (s === "in_progress") return "#3b82f6";
   if (s === "on_hold") return "#f59e0b";
@@ -3061,40 +3061,40 @@ function statusColor(s) {
 }
 
 function DPIASection() {
-  const [dash, setDash] = useState(null);
-  const [items, setItems] = useState([]);
-  const [risks, setRisks] = useState({});
-  const [audits, setAudits] = useState({});
-  const [expanded, setExpanded] = useState(null);
+  const [dash, setDash] = useState<any>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [risks, setRisks] = useState<any>({});
+  const [audits, setAudits] = useState<any>({});
+  const [expanded, setExpanded] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
+  const [editId, setEditId] = useState<any>(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [workflow, setWorkflow] = useState({ stages: DPIA_DEFAULT_STAGES, transitions: DPIA_DEFAULT_TRANSITIONS });
   const [showWorkflowCfg, setShowWorkflowCfg] = useState(false);
   const [wfErr, setWfErr] = useState("");
 
-  const stageMeta = (stage) => {
+  const stageMeta = (stage: any) => {
     const s = (workflow.stages || []).find(x => x.id === stage);
     return { id: stage, label: s ? s.label : (stage || "?").replace(/_/g, " "), color: s ? s.color : "#64748b" };
   };
 
-  const canTransition = (a) => {
+  const canTransition = (a: any) => {
     const isAdminUser = localStorage.getItem("admin_role") === "admin";
     return (workflow.transitions || []).filter(t =>
       t.from === (a.stage || "draft") && (!t.requireAdmin || isAdminUser)
     );
   };
 
-  const progIndex = (stage) => {
+  const progIndex = (stage: any) => {
     const i = (workflow.stages || []).findIndex(s => s.id === stage);
     return i;
   };
 
   const emptyForm = () => ({
     title: "", description: "", businessUnit: "", stage: "draft", riskLevel: "medium",
-    dataCategories: [], thirdParty: false, thirdPartyName: "",
+    dataCategories: [] as string[], thirdParty: false, thirdPartyName: "",
     startDate: "", dueDate: "",
     risks: [{ description: "", likelihood: "possible", impact: "moderate", status: "open", remediation: "", dueDate: "" }]
   });
@@ -3109,12 +3109,12 @@ function DPIASection() {
     ]).then(([d, list, wf]) => {
       if (wf && Array.isArray(wf.stages)) setWorkflow(wf);
       setDash(d); setItems(list || []); setLoading(false);
-      (list || []).forEach(a => {
+      (list || []).forEach((a: any) => {
         fetch(`${API_BASE}/api/dpia/${a.id}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null)
           .then(detail => {
             if (detail) {
-              setRisks(p => ({ ...p, [a.id]: detail.risks || [] }));
-              setAudits(p => ({ ...p, [a.id]: detail.audit || [] }));
+              setRisks((p: any) => ({ ...p, [a.id]: detail.risks || [] }));
+              setAudits((p: any) => ({ ...p, [a.id]: detail.audit || [] }));
             }
           })
           .catch(() => {});
@@ -3124,14 +3124,14 @@ function DPIASection() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggleCategory = (c) => {
-    setForm(f => {
+  const toggleCategory = (c: any) => {
+    setForm((f: any) => {
       const has = f.dataCategories.includes(c);
-      return { ...f, dataCategories: has ? f.dataCategories.filter(x => x !== c) : [...f.dataCategories, c] };
+      return { ...f, dataCategories: has ? f.dataCategories.filter((x: any) => x !== c) : [...f.dataCategories, c] };
     });
   };
 
-  const submit = async (e) => {
+  const submit = async (e: any) => {
     e.preventDefault();
     setMsg(""); setErr("");
     if (!form.title.trim()) { setErr("DPIA title is required"); return; }
@@ -3152,10 +3152,10 @@ function DPIASection() {
       setMsg(editId ? "DPIA updated." : "DPIA created.");
       setShowForm(false); setEditId(null); setForm(emptyForm());
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
-  const doTransition = async (a, to, requireComment) => {
+  const doTransition = async (a: any, to: any, requireComment: any) => {
     const comment = requireComment ? window.prompt(`Comment required to move "${a.title}" to next stage:`) : "";
     if (requireComment && !comment) return;
     try {
@@ -3168,7 +3168,7 @@ function DPIASection() {
       if (!res.ok) throw new Error(d.error || "Transition failed");
       setMsg(`Moved "${a.title}" → ${stageMeta(to).label}.`);
       load();
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex: any) { setErr(ex.message); }
   };
 
   const saveWorkflowCfg = async () => {
@@ -3185,19 +3185,19 @@ function DPIASection() {
       setMsg("Workflow configuration saved.");
       setShowWorkflowCfg(false);
       load();
-    } catch (ex) { setWfErr(ex.message); }
+    } catch (ex: any) { setWfErr(ex.message); }
   };
 
-  const del = async (a) => {
+  const del = async (a: any) => {
     if (!window.confirm(`Delete DPIA "${a.title}" and its risks?`)) return;
     try {
       const res = await fetch(`${API_BASE}/api/dpia/${a.id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) throw new Error("Delete failed");
       load();
-    } catch (ex) { alert(ex.message); }
+    } catch (ex: any) { alert(ex.message); }
   };
 
-  const edit = (a) => {
+  const edit = (a: any) => {
     setEditId(a.id);
     setForm({
       title: a.title, description: a.description || "", businessUnit: a.businessUnit || "",
@@ -3207,7 +3207,7 @@ function DPIASection() {
       startDate: a.startDate ? a.startDate.slice(0, 10) : "",
       dueDate: a.dueDate ? a.dueDate.slice(0, 10) : "",
       risks: (risks[a.id] || [{ description: "", likelihood: "possible", impact: "moderate", status: "open", remediation: "", dueDate: "" }])
-        .map(r => ({ description: r.description, likelihood: r.likelihood, impact: r.impact, status: r.status, remediation: r.remediation || "", dueDate: r.dueDate ? r.dueDate.slice(0, 10) : "" }))
+        .map((r: any) => ({ description: r.description, likelihood: r.likelihood, impact: r.impact, status: r.status, remediation: r.remediation || "", dueDate: r.dueDate ? r.dueDate.slice(0, 10) : "" }))
     });
     setShowForm(true);
   };
@@ -3225,7 +3225,7 @@ function DPIASection() {
       a.href = url; a.download = `dpia-executive-report-${new Date().toISOString().slice(0, 10)}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (ex) { alert(ex.message); }
+    } catch (ex: any) { alert(ex.message); }
   };
 
   const viewReport = async () => {
@@ -3237,13 +3237,13 @@ function DPIASection() {
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch (ex) { alert(ex.message); }
+    } catch (ex: any) { alert(ex.message); }
   };
 
   if (loading) return <div className="section"><p style={{ color: "var(--text-secondary)" }}>Loading DPIA report...</p></div>;
 
-  const byUnit = {};
-  (dash?.byUnit || []).forEach(r => { byUnit[r.unit] = byUnit[r.unit] || {}; byUnit[r.unit][r.status] = r.count; });
+  const byUnit: any = {};
+  (dash?.byUnit || []).forEach((r: any) => { byUnit[r.unit] = byUnit[r.unit] || {}; byUnit[r.unit][r.status] = r.count; });
 
   return (
     <div className="section">
@@ -3310,7 +3310,7 @@ function DPIASection() {
                   <td>{byUnit[u].on_hold || 0}</td>
                 </tr>
               ))}
-              {Object.keys(byUnit).length === 0 && <tr><td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "16px" }}>No assessments yet.</td></tr>}
+              {Object.keys(byUnit).length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--text-muted)", padding: "16px" }}>No assessments yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -3318,7 +3318,7 @@ function DPIASection() {
         <div className="chart-panel" style={{ flex: "1", minWidth: "280px" }}>
           <h3>Data Categories Processed</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "260px", overflowY: "auto" }}>
-            {(dash?.dataCategories || []).map(dc => (
+            {(dash?.dataCategories || []).map((dc: any) => (
               <div key={dc.category} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ flex: 1, fontSize: "13px" }}>{dc.category}</span>
                 <span className="badge connected">{dc.count}</span>
@@ -3390,7 +3390,7 @@ function DPIASection() {
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <button className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => {
                 const nid = window.prompt("New stage id (e.g. 'consultation'):");
-                const nlabel = window.prompt("Stage label:", nid);
+                const nlabel = window.prompt("Stage label:", nid || "");
                 if (!nid) return;
                 setWorkflow(w => ({ ...w, stages: [...w.stages, { id: nid, label: nlabel || nid, color: "#64748b" }] }));
               }}>+ Add Stage</button>
@@ -3497,7 +3497,7 @@ function DPIASection() {
             <div className="input-group" style={{ gridColumn: "1 / -1" }}>
               <label>Data Categories</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {DPIA_CATEGORY_SELECT.map(c => (
+                {DPIA_CATEGORY_SELECT.map((c: any) => (
                   <button key={c} type="button" onClick={() => toggleCategory(c)}
                     className={form.dataCategories.includes(c) ? "badge connected" : "badge"}
                     style={{ cursor: "pointer", border: "none", fontSize: "12px" }}>
@@ -3582,7 +3582,7 @@ function DPIASection() {
                 </tr>
               );
             })}
-            {items.length === 0 && <tr><td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No DPIAs yet. Create your first assessment.</td></tr>}
+            {items.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>No DPIAs yet. Create your first assessment.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3636,7 +3636,7 @@ function DPIASection() {
                 <table className="subjects-table" style={{ width: "100%", fontSize: "13px" }}>
                   <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Level</th><th>Status</th><th>Due</th><th>Remediation</th></tr></thead>
                   <tbody>
-                    {(risks[expanded] || []).map(r => (
+                    {(risks[expanded] || []).map((r: any) => (
                       <tr key={r.id}>
                         <td>{r.description}</td>
                         <td>{r.likelihood}</td>
@@ -3647,13 +3647,13 @@ function DPIASection() {
                         <td>{r.remediation || "—"}</td>
                       </tr>
                     ))}
-                    {(risks[expanded] || []).length === 0 && <tr><td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: "12px" }}>No risks recorded.</td></tr>}
+                    {(risks[expanded] || []).length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: "12px" }}>No risks recorded.</td></tr>}
                   </tbody>
                 </table>
 
                 <h3 style={{ margin: "20px 0 8px", border: "none", padding: 0, fontSize: "16px" }}>Audit Trail</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "260px", overflowY: "auto" }}>
-                  {audit.map((e, i) => (
+                  {audit.map((e: any, i: any) => (
                     <div key={e.id || i} style={{ fontSize: "12px", borderLeft: "3px solid var(--primary)", paddingLeft: "10px", background: "var(--panel-bg)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
                         <strong>{e.action.replace(/_/g, " ")}</strong>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import VerifyResult, { computeStats } from './VerifyResult';
 import { ThemeContext, BrandContext } from './App';
@@ -6,8 +5,11 @@ import { UNIVERSITY } from './config';
 
 const toggleTheme = jest.fn();
 
+let mockFetch: jest.Mock;
+
 beforeEach(() => {
-  global.fetch = jest.fn();
+  mockFetch = jest.fn();
+  global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterEach(() => {
@@ -59,7 +61,7 @@ test('renders roll number input', () => {
 });
 
 test('fetches results by roll number and shows marksheet', async () => {
-  global.fetch.mockResolvedValueOnce({
+  mockFetch.mockResolvedValueOnce({
     json: () => Promise.resolve([
       { id: '1', rollNumber: '2024001', name: 'John Doe', department: 'CS', semester: 'Sem 1', subjects },
     ]),
@@ -75,7 +77,7 @@ test('fetches results by roll number and shows marksheet', async () => {
 });
 
 test('shows not found when no results', async () => {
-  global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve([]) });
+  mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve([]) });
   renderPage();
   fireEvent.change(screen.getByPlaceholderText(/Roll Number/), { target: { value: 'NOPE' } });
   fireEvent.click(screen.getByRole('button', { name: /Search/ }));
@@ -91,7 +93,7 @@ test('raise issue button opens form', () => {
 });
 
 test('submits issue to admin endpoint', async () => {
-  global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ success: true }) });
+  mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ success: true }) });
   renderPage();
   fireEvent.change(screen.getByPlaceholderText(/Roll Number/), { target: { value: '2024001' } });
   fireEvent.click(screen.getByRole('button', { name: /Raise Issue/ }));
@@ -99,7 +101,7 @@ test('submits issue to admin endpoint', async () => {
   fireEvent.click(screen.getByRole('button', { name: /Submit Issue/ }));
 
   await waitFor(() => expect(screen.getByText('Issue submitted to the admin. Thank you!')).toBeInTheDocument());
-  expect(global.fetch).toHaveBeenCalledWith(
+  expect(mockFetch).toHaveBeenCalledWith(
     expect.stringContaining('/api/issues'),
     expect.objectContaining({
       method: 'POST',

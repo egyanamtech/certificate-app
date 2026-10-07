@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import VerifyPage from './VerifyPage';
 import { ThemeContext, BrandContext } from './App';
@@ -8,8 +7,11 @@ const HASH = '97fe27d1c7ccf71d2e8c99959a361eb2ce62f181aa8d6b50b705f2707860af35';
 const IPFS = 'QmXyZ123abc';
 const toggleTheme = jest.fn();
 
+let mockFetch: jest.Mock;
+
 beforeEach(() => {
-  global.fetch = jest.fn();
+  mockFetch = jest.fn();
+  global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterEach(() => {
@@ -33,7 +35,7 @@ test('renders header and hash-only input', () => {
 });
 
 test('verifies by hash and shows only the hash value', async () => {
-  global.fetch.mockResolvedValueOnce({
+  mockFetch.mockResolvedValueOnce({
     json: () => Promise.resolve({ valid: true, hash: HASH }),
   });
   renderPage();
@@ -42,13 +44,13 @@ test('verifies by hash and shows only the hash value', async () => {
 
   await waitFor(() => expect(screen.getAllByText('Certificate Verified').length).toBeGreaterThan(0));
   expect(screen.getByText(HASH)).toBeInTheDocument();
-  expect(global.fetch).toHaveBeenCalledWith(
+  expect(mockFetch).toHaveBeenCalledWith(
     expect.stringContaining(`/api/verify/${HASH}`)
   );
 });
 
 test('shows download certificate link when ipfs hash present', async () => {
-  global.fetch.mockResolvedValueOnce({
+  mockFetch.mockResolvedValueOnce({
     json: () => Promise.resolve({ valid: true, hash: HASH, ipfsHash: IPFS }),
   });
   renderPage();
@@ -63,7 +65,7 @@ test('shows download certificate link when ipfs hash present', async () => {
 });
 
 test('hides download link when no ipfs hash', async () => {
-  global.fetch.mockResolvedValueOnce({
+  mockFetch.mockResolvedValueOnce({
     json: () => Promise.resolve({ valid: true, hash: HASH }),
   });
   renderPage();
@@ -75,7 +77,7 @@ test('hides download link when no ipfs hash', async () => {
 });
 
 test('does not render name or roll number when verified', async () => {
-  global.fetch.mockResolvedValueOnce({
+  mockFetch.mockResolvedValueOnce({
     json: () => Promise.resolve({ valid: true, hash: HASH }),
   });
   renderPage();
@@ -88,7 +90,7 @@ test('does not render name or roll number when verified', async () => {
 });
 
 test('shows not found for unknown hash', async () => {
-  global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ valid: false }) });
+  mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ valid: false }) });
   renderPage();
   fireEvent.change(screen.getByPlaceholderText('Enter Certificate Hash'), { target: { value: 'deadbeef' } });
   fireEvent.click(screen.getByRole('button', { name: /Verify/ }));
@@ -104,9 +106,9 @@ test('alerts when hash is empty', () => {
 });
 
 test('verifies on Enter key', async () => {
-  global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ valid: true, hash: HASH }) });
+  mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ valid: true, hash: HASH }) });
   renderPage();
   fireEvent.change(screen.getByPlaceholderText('Enter Certificate Hash'), { target: { value: HASH } });
   fireEvent.keyDown(screen.getByPlaceholderText('Enter Certificate Hash'), { key: 'Enter' });
-  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 });

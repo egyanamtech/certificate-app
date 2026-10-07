@@ -13,7 +13,7 @@
 //       pkg update && pkg install termux-api
 //
 //  3. In Termux start this gateway:
-//       GATEWAY_TOKEN=mysecret123 node sms-gateway.js
+//       GATEWAY_TOKEN=mysecret123 node src/sms-gateway.ts
 //
 //  4. In the admin app → Settings → SMS Gateway:
 //       Provider    :  Android Phone Gateway
@@ -25,16 +25,16 @@
 //  Or in WiFi settings:  Settings → Network → your IP
 // ═══════════════════════════════════════════════════════════════════
 
-const http = require("http");
-const { exec } = require("child_process");
+import http from "http";
+import { exec } from "child_process";
 
 const PORT       = parseInt(process.argv[2] || process.env.PORT || "8082", 10);
 const TOKEN      = process.env.GATEWAY_TOKEN || "";
 const LOG_PREFIX = "[sms-gateway]";
 
-function log(...a) { console.log(LOG_PREFIX, new Date().toISOString().slice(11, 19), ...a); }
+function log(...a: unknown[]) { console.log(LOG_PREFIX, new Date().toISOString().slice(11, 19), ...a); }
 
-function sendSms(number, message) {
+function sendSms(number: string, message: string): Promise<{ success: boolean }> {
   return new Promise((resolve, reject) => {
     // Strip spaces, ensure + prefix for international
     let num = String(number).replace(/[\s\-()]/g, "");
@@ -46,7 +46,7 @@ function sendSms(number, message) {
     const cmd  = `termux-sms-send -n '${num}' '${safe}'`;
 
     log("Sending to", num, `(${message.length} chars)`);
-    exec(cmd, { timeout: 15000 }, (err, stdout, stderr) => {
+    exec(cmd, { timeout: 15000 }, (err, _stdout, _stderr) => {
       if (err) {
         log("FAILED:", err.message);
         return reject(err);
@@ -57,7 +57,7 @@ function sendSms(number, message) {
   });
 }
 
-function readBody(req) {
+function readBody(req: http.IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
     let data = "";
     req.on("data", (c) => (data += c));
@@ -68,7 +68,7 @@ function readBody(req) {
   });
 }
 
-function json(res, code, obj) {
+function json(res: http.ServerResponse, code: number, obj: any) {
   res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
   res.end(JSON.stringify(obj));
 }
@@ -128,7 +128,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     return json(res, 404, { error: "Unknown endpoint" });
-  } catch (e) {
+  } catch (e: any) {
     log("Error:", e.message);
     return json(res, 500, { error: e.message });
   }

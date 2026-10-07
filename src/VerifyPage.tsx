@@ -1,15 +1,22 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "./App";
+import type { VerifyCertificateResponse } from "./types/certificates";
 
-const API_BASE = process.env.NODE_ENV === 'development'
-  ? `http://${window.location.hostname}:5000`
-  : '';
+const API_BASE =
+  process.env.NODE_ENV === "development"
+    ? `http://${window.location.hostname}:5000`
+    : "";
 
-export default function VerifyPage({ onBack, initialHash = "" }) {
+interface VerifyPageProps {
+  onBack: () => void;
+  initialHash?: string;
+}
+
+export default function VerifyPage({ onBack, initialHash = "" }: VerifyPageProps) {
   const { theme, toggleTheme } = useTheme();
   const [hash, setHash] = useState(initialHash);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<VerifyCertificateResponse | null>(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +29,7 @@ export default function VerifyPage({ onBack, initialHash = "" }) {
       setResult(null);
 
       const res = await fetch(`${API_BASE}/api/verify/${encodeURIComponent(h)}`);
-      const data = await res.json();
+      const data = (await res.json()) as VerifyCertificateResponse;
 
       if (data.valid) {
         setResult(data);
@@ -40,6 +47,7 @@ export default function VerifyPage({ onBack, initialHash = "" }) {
 
   useEffect(() => {
     if (initialHash.trim()) verify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -103,7 +111,7 @@ export default function VerifyPage({ onBack, initialHash = "" }) {
             )}
             <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px" }}>
               <strong>Hash:</strong> <span className="hash-text">{result.hash}</span>{" "}
-              <button className="btn-copy" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(result.hash); e.target.textContent = "Copied!"; setTimeout(() => { e.target.textContent = "Copy"; }, 1500); }}>Copy</button>
+              <button className="btn-copy" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(result.hash); (e.target as HTMLElement).textContent = "Copied!"; setTimeout(() => { (e.target as HTMLElement).textContent = "Copy"; }, 1500); }}>Copy</button>
             </p>
           </div>
         )}

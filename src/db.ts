@@ -1,6 +1,6 @@
-const { Pool } = require("pg");
-const fs = require("fs");
-const path = require("path");
+import { Pool } from "pg";
+import fs from "fs";
+import path from "path";
 
 const DB_HOST = process.env.DB_HOST || "localhost";
 const DB_PORT = parseInt(process.env.DB_PORT || "5432", 10);
@@ -8,9 +8,9 @@ const DB_USER = process.env.DB_USER || "postgres";
 const DB_PASS = process.env.DB_PASS || "";
 const DB_NAME = process.env.DB_NAME || "certificate_app";
 
-const DATA_DIR = process.env.DATA_DIR || __dirname;
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..");
 
-const pool = new Pool({
+export const pool = new Pool({
   host: DB_HOST,
   port: DB_PORT,
   user: DB_USER,
@@ -19,6 +19,47 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30000,
 });
+
+/** Shapes of the legacy JSON files imported during the JSON -> Postgres migration. */
+interface LegacyCertificate {
+  name: string;
+  rollNumber?: string;
+  course?: string;
+  department?: string;
+  year?: string;
+  email?: string;
+  ipfsHash?: string;
+  txHash?: string;
+  timestamp?: string;
+}
+
+interface LegacyActivityEntry {
+  type: string;
+  details?: unknown;
+  timestamp?: string;
+}
+
+interface LegacyBrand {
+  name?: string;
+  shortName?: string;
+  logo?: string | null;
+}
+
+interface LegacyUser {
+  password: string;
+  role?: string;
+  createdAt?: string;
+}
+
+interface LegacyResult {
+  id: string;
+  rollNumber: string;
+  name?: string;
+  department?: string;
+  semester?: string;
+  subjects?: unknown;
+  timestamp?: string;
+}
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS certificates (
@@ -202,8 +243,11 @@ async function ensureDatabase() {
     max: 1,
   });
   try {
-    const { rows } = await adminPool.query("SELECT 1 FROM pg_database WHERE datname = $1", [DB_NAME]);
-    if (rows.length === 0) {
+    const { rowCount } = await adminPool.query(
+      "SELECT 1 FROM pg_database WHERE datname = $1",
+      [DB_NAME]
+    );
+    if (rowCount === 0) {
       await adminPool.query(`CREATE DATABASE ${DB_NAME}`);
       console.log(`Database '${DB_NAME}' created`);
     }
@@ -248,26 +292,31 @@ async function ensureDatabase() {
   );
 }
 
-function toDate(v) {
+function toDate(v: unknown): Date | null {
   if (!v) return null;
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d;
+  if (typeof v === "string" || typeof v === "number" || v instanceof Date) {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
 }
 
 async function migrateFromJson() {
-  const read = (file, fallback) => {
+  const read = <T>(file: string, fallback: T): T => {
     try {
       const p = path.join(DATA_DIR, file);
-      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf8"));
+      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf8")) as T;
     } catch (e) {
-      console.error(`Error reading ${file}:`, e.message);
+      console.error(`Error reading ${file}:`, e instanceof Error ? e.message : e);
     }
     return fallback;
   };
 
-  const { rows: [{ c }] } = await pool.query("SELECT COUNT(*)::int AS c FROM certificates");
+  const { rows: [{ c }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM certificates"
+  );
   if (c === 0) {
-    const certs = read("certificates.json", {});
+    const certs = read<Record<string, LegacyCertificate>>("certificates.json", {});
     for (const [hash, d] of Object.entries(certs)) {
       await pool.query(
         `INSERT INTO certificates (hash, name, "rollNumber", course, department, year, email, "ipfsHash", "txHash", timestamp)
@@ -279,9 +328,11 @@ async function migrateFromJson() {
     if (Object.keys(certs).length) console.log(`Migrated ${Object.keys(certs).length} certificates`);
   }
 
-  const { rows: [{ c: ac }] } = await pool.query("SELECT COUNT(*)::int AS c FROM activity");
+  const { rows: [{ c: ac }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM activity"
+  );
   if (ac === 0) {
-    const log = read("activity.json", []);
+    const log = read<LegacyActivityEntry[]>("activity.json", []);
     for (const e of log) {
       await pool.query(
         "INSERT INTO activity (type, details, timestamp) VALUES ($1, $2, $3)",
@@ -291,9 +342,11 @@ async function migrateFromJson() {
     if (log.length) console.log(`Migrated ${log.length} activity entries`);
   }
 
-  const { rows: [{ c: bc }] } = await pool.query("SELECT COUNT(*)::int AS c FROM brand");
+  const { rows: [{ c: bc }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM brand"
+  );
   if (bc === 0) {
-    const brand = read("brand.json", {});
+    const brand = read<LegacyBrand>("brand.json", {});
     await pool.query(
       `INSERT INTO brand (id, name, "shortName", logo) VALUES (1, $1, $2, $3)
        ON CONFLICT (id) DO UPDATE SET id = 1`,
@@ -301,9 +354,11 @@ async function migrateFromJson() {
     );
   }
 
-  const { rows: [{ c: uc }] } = await pool.query("SELECT COUNT(*)::int AS c FROM users");
+  const { rows: [{ c: uc }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM users"
+  );
   if (uc === 0) {
-    const users = read("users.json", {});
+    const users = read<Record<string, LegacyUser>>("users.json", {});
     for (const [username, u] of Object.entries(users)) {
       await pool.query(
         `INSERT INTO users (username, password, role, "createdAt") VALUES ($1, $2, $3, $4)
@@ -314,9 +369,11 @@ async function migrateFromJson() {
     if (Object.keys(users).length) console.log(`Migrated ${Object.keys(users).length} users`);
   }
 
-  const { rows: [{ c: rc }] } = await pool.query("SELECT COUNT(*)::int AS c FROM results");
+  const { rows: [{ c: rc }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM results"
+  );
   if (rc === 0) {
-    const results = read("results.json", []);
+    const results = read<LegacyResult[]>("results.json", []);
     for (const r of results) {
       await pool.query(
         `INSERT INTO results (id, "rollNumber", name, department, semester, subjects, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -327,9 +384,11 @@ async function migrateFromJson() {
     if (results.length) console.log(`Migrated ${results.length} results`);
   }
 
-  const { rows: [{ c: dc }] } = await pool.query("SELECT COUNT(*)::int AS c FROM departments");
+  const { rows: [{ c: dc }] } = await pool.query<{ c: number }>(
+    "SELECT COUNT(*)::int AS c FROM departments"
+  );
   if (dc === 0) {
-    const deps = read("departments.json", []);
+    const deps = read<string[]>("departments.json", []);
     for (const name of deps) {
       await pool.query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [name]);
     }
@@ -337,9 +396,7 @@ async function migrateFromJson() {
   }
 }
 
-async function init() {
+export async function init() {
   await ensureDatabase();
   await migrateFromJson();
 }
-
-module.exports = { pool, init };

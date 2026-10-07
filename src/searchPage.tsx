@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 const API_BASE = process.env.NODE_ENV === 'development'
   ? `http://${window.location.hostname}:5000`
   : '';
 
+interface SearchResult {
+  valid: boolean;
+  name?: string;
+  ipfs?: string;
+}
+
 export default function SearchPage() {
   const [hash, setHash] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<SearchResult | null>(null);
   const [status, setStatus] = useState("");
 
   const searchCertificate = async () => {

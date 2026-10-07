@@ -1,11 +1,26 @@
 import React, { useState, useCallback } from "react";
 import { useTheme } from "./App";
+import type {
+  SubjectEntry,
+  SubjectStats,
+  StudentResult,
+  OtpRequestResponse,
+  OtpVerifyResponse,
+  IssueSubmitResponse,
+} from "./types/results";
 
-const API_BASE = process.env.NODE_ENV === 'development'
-  ? `http://${window.location.hostname}:5000`
-  : '';
+const API_BASE =
+  process.env.NODE_ENV === "development"
+    ? `http://${window.location.hostname}:5000`
+    : "";
 
-function computeStats(subjects) {
+type ResultStep = "identify" | "otp" | "done";
+
+interface VerifyResultProps {
+  onBack: () => void;
+}
+
+export function computeStats(subjects: SubjectEntry[]): SubjectStats {
   let total = 0, max = 0, count = 0;
   for (const s of subjects) {
     if (s.marks != null && !isNaN(Number(s.marks))) {
@@ -25,11 +40,9 @@ function computeStats(subjects) {
   return { total, max, pct, count, allPassed };
 }
 
-export { computeStats };
-
-export default function VerifyResult({ onBack }) {
+export default function VerifyResult({ onBack }: VerifyResultProps) {
   const { theme, toggleTheme } = useTheme();
-  const [step, setStep] = useState("identify"); // identify -> otp -> done
+  const [step, setStep] = useState<ResultStep>("identify"); // identify -> otp -> done
   const [roll, setRoll] = useState("");
   const [sem, setSem] = useState("");
   const [aadhaar, setAadhaar] = useState("");
@@ -37,7 +50,7 @@ export default function VerifyResult({ onBack }) {
   const [maskedMobile, setMaskedMobile] = useState("");
   const [demoOtp, setDemoOtp] = useState("");
   const [resultToken, setResultToken] = useState("");
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<StudentResult[] | null>(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [showIssue, setShowIssue] = useState(false);
@@ -58,7 +71,7 @@ export default function VerifyResult({ onBack }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rollNumber: r, aadhaar: a })
       });
-      const data = await res.json();
+      const data = (await res.json()) as OtpRequestResponse;
       if (data.success) {
         setMaskedMobile(data.maskedMobile || "");
         setDemoOtp(data.demoOtp || "");
@@ -75,7 +88,32 @@ export default function VerifyResult({ onBack }) {
     }
   }, [roll, aadhaar]);
 
-  const loadResults = useCallback(async (r, token) => {
+  const handleSearch = useCallback(async () => {
+    const r = roll.trim();
+    if (!r) return setStatus("Enter the roll number");
+    setLoading(true);
+    setStatus("Searching...");
+    try {
+      const params = new URLSearchParams({ rollNumber: r });
+      if (sem.trim()) params.set("semester", sem.trim());
+      const res = await fetch(`${API_BASE}/api/results/verify?${params.toString()}`);
+      const data = (await res.json()) as StudentResult[] | { error?: string };
+      if (Array.isArray(data)) {
+        setResults(data);
+        setStatus(data.length ? `${data.length} result${data.length > 1 ? "s" : ""} found` : "No Result Found");
+      } else {
+        setResults([]);
+        setStatus(data.error || "No Result Found");
+      }
+    } catch {
+      setResults([]);
+      setStatus("No Result Found");
+    } finally {
+      setLoading(false);
+    }
+  }, [roll, sem]);
+
+  const loadResults = useCallback(async (r: string, token: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ rollNumber: r });
@@ -83,7 +121,7 @@ export default function VerifyResult({ onBack }) {
       const res = await fetch(`${API_BASE}/api/results/verify?${params.toString()}`, {
         headers: { "x-result-token": token }
       });
-      const data = await res.json();
+      const data = (await res.json()) as StudentResult[] | { error?: string };
       if (Array.isArray(data)) {
         setResults(data);
         setStatus(data.length ? `${data.length} result${data.length > 1 ? "s" : ""} found` : "No result found for this roll number");
@@ -110,7 +148,7 @@ export default function VerifyResult({ onBack }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rollNumber: roll.trim(), otp: o })
       });
-      const data = await res.json();
+      const data = (await res.json()) as OtpVerifyResponse;
       if (data.success && data.resultToken) {
         setResultToken(data.resultToken);
         setStep("done");
@@ -138,7 +176,7 @@ export default function VerifyResult({ onBack }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rollNumber, semester: sem.trim(), message: msg }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as IssueSubmitResponse;
       if (data.success) {
         setIssueMsg("");
         setShowIssue(false);
@@ -173,7 +211,14 @@ export default function VerifyResult({ onBack }) {
               placeholder="Roll Number (e.g. 2024001)"
               value={roll}
               onChange={(e) => setRoll(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && requestOtp()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <input
+              type="text"
+              placeholder="Semester (optional)"
+              value={sem}
+              onChange={(e) => setSem(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
             <input
               type="text"
@@ -184,9 +229,14 @@ export default function VerifyResult({ onBack }) {
               onChange={(e) => setAadhaar(e.target.value.replace(/[^\d\s]/g, ""))}
               onKeyDown={(e) => e.key === "Enter" && requestOtp()}
             />
-            <button className="btn-primary" onClick={requestOtp} disabled={loading}>
-              {loading ? <><span className="spinner" /> Sending OTP</> : "Send OTP"}
-            </button>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button className="btn-primary" onClick={handleSearch} disabled={loading} style={{ flex: 1 }}>
+                {loading ? <><span className="spinner" /> Searching</> : "Search"}
+              </button>
+              <button className="btn-secondary" onClick={requestOtp} disabled={loading} style={{ flex: 1 }}>
+                {loading ? <><span className="spinner" /> Sending OTP</> : "Send OTP"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -225,6 +275,14 @@ export default function VerifyResult({ onBack }) {
         )}
 
         {status && <div className="status">{status}</div>}
+
+        {step === "identify" && (
+          <div style={{ marginTop: "16px", textAlign: "center" }}>
+            <button className="btn-secondary" onClick={() => { setShowIssue(true); setIssueStatus(""); }}>
+              🚩 Raise Issue
+            </button>
+          </div>
+        )}
 
         {results && results.length > 0 && results.map((r, idx) => {
           const stats = computeStats(r.subjects || []);
@@ -278,7 +336,7 @@ export default function VerifyResult({ onBack }) {
           );
         })}
 
-        {results && results.length === 0 && (
+        {results && results.length === 0 && status !== "No Result Found" && (
           <div className="result-card error">
             <p><strong style={{ color: "#fca5a5" }}>No Result Found</strong></p>
             <p style={{ color: "#94a3b8", fontSize: "13px" }}>No results match this roll number.</p>
