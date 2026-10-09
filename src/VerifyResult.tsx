@@ -49,7 +49,6 @@ export default function VerifyResult({ onBack }: VerifyResultProps) {
   const [otp, setOtp] = useState("");
   const [maskedMobile, setMaskedMobile] = useState("");
   const [demoOtp, setDemoOtp] = useState("");
-  const [resultToken, setResultToken] = useState("");
   const [results, setResults] = useState<StudentResult[] | null>(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -150,7 +149,6 @@ export default function VerifyResult({ onBack }: VerifyResultProps) {
       });
       const data = (await res.json()) as OtpVerifyResponse;
       if (data.success && data.resultToken) {
-        setResultToken(data.resultToken);
         setStep("done");
         await loadResults(roll.trim(), data.resultToken);
       } else {

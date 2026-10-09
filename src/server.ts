@@ -491,7 +491,7 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
 });
 
 app.get("/api/search", async (req: Request, res: Response) => {
-  const q = (String(req.query.q) || "").toLowerCase().trim();
+  const q = (String(req.query.q ?? "") || "").toLowerCase().trim();
   if (!q) return res.json([]);
   const like = `%${q}%`;
   const { rows } = await pool.query(
@@ -532,26 +532,34 @@ app.delete("/api/activity", requireAdmin, async (req: Request, res: Response) =>
 });
 
 app.get("/api/certificates/download", async (req: Request, res: Response) => {
+  const department = String(req.query.department || "").trim();
+  const year = String(req.query.year || "").trim();
   const certs = await listCertificates();
-  const data = certs.map(d => ({
-    Name: d.name,
-    "Roll Number": d.rollNumber || "",
-    Course: d.course || "",
-    Department: d.department || "",
-    Year: d.year || "",
-    Email: d.email || "",
-    Hash: d.hash,
-    "IPFS CID": d.ipfsHash,
-    "Transaction Hash": d.txHash || "",
-    Timestamp: d.timestamp ? new Date(d.timestamp).toISOString() : ""
-  }));
+  const data = certs
+    .filter(d =>
+      (!department || (d.department || "") === department) &&
+      (!year || (d.year || "") === year)
+    )
+    .map(d => ({
+      Name: d.name,
+      "Roll Number": d.rollNumber || "",
+      Course: d.course || "",
+      Department: d.department || "",
+      Year: d.year || "",
+      Email: d.email || "",
+      Hash: d.hash,
+      "IPFS CID": d.ipfsHash,
+      "Transaction Hash": d.txHash || "",
+      Timestamp: d.timestamp ? new Date(d.timestamp).toISOString() : ""
+    }));
+  const fname = ["certificates", department || "", year || ""].filter(Boolean).join("-") || "certificates";
   if (req.query.format === "xlsx") {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, "Certificates");
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=certificates.xlsx");
+    res.setHeader("Content-Disposition", `attachment; filename=${fname}.xlsx`);
     res.send(buf);
   } else {
     const header = "Name,Roll Number,Course,Department,Year,Email,Hash,IPFS CID,Transaction Hash,Timestamp\n";
@@ -559,7 +567,7 @@ app.get("/api/certificates/download", async (req: Request, res: Response) => {
       `"${d.Name}","${d["Roll Number"]}","${d.Course}","${d.Department}","${d.Year}","${d.Email}","${d.Hash}","${d["IPFS CID"]}","${d["Transaction Hash"]}","${d.Timestamp}"`
     ).join("\n");
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=certificates.csv");
+    res.setHeader("Content-Disposition", `attachment; filename=${fname}.csv`);
     res.send(header + rows);
   }
 });
@@ -861,8 +869,8 @@ app.post("/api/results/bulk-save", requirePerm("results"), async (req: Request, 
 });
 
 app.get("/api/results/verify", async (req: Request, res: Response) => {
-  const rollNumber = (String(req.query.rollNumber) || "").trim();
-  const semester = (String(req.query.semester) || "").trim();
+  const rollNumber = (String(req.query.rollNumber ?? "") || "").trim();
+  const semester = (String(req.query.semester ?? "") || "").trim();
   if (!rollNumber) return res.status(400).json({ error: "Roll Number is required" });
   const isAdmin = await isAdminRequest(req);
   if (!isAdmin) {
@@ -891,9 +899,9 @@ app.get("/api/results", async (req: Request, res: Response) => {
   const uname = await getUsernameFromReq(req);
   if (!uname) return res.status(401).json({ error: "Login required" });
   const scope = await getDeptScope(req);
-  const q = (String(req.query.q) || "").toLowerCase().trim();
-  const department = (String(req.query.department) || "").trim();
-  const semester = (String(req.query.semester) || "").trim();
+  const q = (String(req.query.q ?? "") || "").toLowerCase().trim();
+  const department = (String(req.query.department ?? "") || "").trim();
+  const semester = (String(req.query.semester ?? "") || "").trim();
   if (department && !deptAllowed(scope, department)) {
     return res.status(403).json({ error: "You do not have access to this department" });
   }
@@ -1021,7 +1029,7 @@ app.post("/api/issues", async (req: Request, res: Response) => {
 });
 
 app.get("/api/issues", requirePerm("issues"), async (req: Request, res: Response) => {
-  const q = (String(req.query.q) || "").toLowerCase().trim();
+  const q = (String(req.query.q ?? "") || "").toLowerCase().trim();
   const rows = q
     ? (await pool.query(
         "SELECT * FROM issues WHERE LOWER(message) LIKE $1 OR LOWER(\"rollNumber\") LIKE $2 ORDER BY timestamp DESC",
@@ -1053,7 +1061,7 @@ app.delete("/api/issues/:id", requirePerm("issues"), async (req: Request, res: R
 });
 
 app.get("/api/activity", async (req: Request, res: Response) => {
-  const q = (String(req.query.q) || "").toLowerCase().trim();
+  const q = (String(req.query.q ?? "") || "").toLowerCase().trim();
   const rows = q
     ? (await pool.query(
         "SELECT * FROM activity WHERE LOWER(type) LIKE $1 OR LOWER(details) LIKE $2 ORDER BY timestamp DESC",

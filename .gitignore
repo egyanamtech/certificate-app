@@ -34,3 +34,6 @@ yarn-error.log*
 /brand.json
 /departments.json
 /searchPage.js
+
+# runtime logs
+/server.log

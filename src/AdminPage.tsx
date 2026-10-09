@@ -128,6 +128,7 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
@@ -193,6 +194,7 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
 
   const handleLogin = async () => {
     setLoginError("");
+    setLoginBusy(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/login`, {
         method: "POST",
@@ -215,6 +217,8 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
       }
     } catch {
       setLoginError("Login failed. Is the server running?");
+    } finally {
+      setLoginBusy(false);
     }
   };
 
@@ -222,29 +226,38 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
 
   if (!loggedIn) {
     return (
-      <div className="page">
-        <div className="card login-form">
-          <button className="btn-back" onClick={onBack}>Back</button>
-          <div style={{ textAlign: "center", fontSize: "48px", margin: "16px 0 8px" }}>🔐</div>
-          <h1>Admin Login</h1>
-          <p style={{ textAlign: "center", color: "#64748b", fontSize: "14px", marginBottom: "24px" }}>
-            Enter admin credentials to access the portal
-          </p>
+      <div className="page login-page">
+        <div className="card login-form login-card">
+          <button className="btn-back" onClick={onBack}>← Back</button>
+          <div className="login-brand">
+            <div className="login-logo">🔐</div>
+            <h1>Admin Login</h1>
+            <p className="login-sub">
+              {brand && brand.name ? `Welcome to ${brand.name}` : "Welcome back"} · Enter admin credentials to access the portal
+            </p>
+          </div>
           <div className="input-group">
             <label>Username</label>
-            <input type="text" placeholder="Enter username" value={loginUser}
-              onChange={(e) => setLoginUser(e.target.value)} />
+            <div className="login-field">
+              <span className="login-field-icon">👤</span>
+              <input type="text" placeholder="Enter username" value={loginUser}
+                onChange={(e) => setLoginUser(e.target.value)} />
+            </div>
           </div>
           <div className="input-group">
             <label>Password</label>
-            <input type="password" placeholder="Enter password" value={loginPass}
-              onChange={(e) => setLoginPass(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+            <div className="login-field">
+              <span className="login-field-icon">🔑</span>
+              <input type="password" placeholder="Enter password" value={loginPass}
+                onChange={(e) => setLoginPass(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+            </div>
           </div>
-          <button className="btn-primary" onClick={handleLogin} style={{ marginTop: "8px" }}>
-            Login
+          <button className="btn-primary login-btn" onClick={handleLogin} disabled={loginBusy}>
+            {loginBusy ? "Signing in…" : "Login"}
           </button>
-          {loginError && <p style={{ color: "#fca5a5", fontSize: "14px", textAlign: "center", marginTop: "12px" }}>{loginError}</p>}
+          {loginError && <p className="login-error">{loginError}</p>}
+          <p className="login-foot">Secure admin access · {brand && brand.shortName ? brand.shortName : "Certificate Portal"}</p>
         </div>
       </div>
     );
@@ -261,10 +274,8 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊", show: true },
     { id: "monitor", label: "Campus Monitor", icon: "🛡️", show: can("monitor") },
-    { id: "issue", label: "Issue Certificate", icon: "📜", show: can("issue") },
-    { id: "bulk", label: "Bulk Upload", icon: "📦", show: can("bulk") },
-    { id: "verify", label: "Verify", icon: "✅", show: can("verify") },
-    { id: "list", label: "Certificates", icon: "🏆", show: can("list") },
+    { id: "issue", label: "Certificates", icon: "📜", show: can("issue") || can("bulk") || can("verify") },
+    { id: "list", label: "Certificate List & Downloads", icon: "🏆", show: can("list") },
     { id: "results", label: "Results", icon: "🎯", show: can("results") },
     { id: "analytics", label: "Analytics", icon: "📈", show: can("analytics") },
     { id: "issues", label: "Issues", icon: "🚩", show: can("issues") },
@@ -272,7 +283,6 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
     { id: "activity", label: "Activity", icon: "🕒", show: true },
     { id: "users", label: "Users", icon: "👥", show: isAdmin },
     { id: "settings", label: "Settings", icon: "⚙️", show: isAdmin },
-    { id: "downloads", label: "Downloads", icon: "⬇️", show: can("downloads") },
   ].filter(n => n.show);
 
   const currentLabel = navItems.find(n => n.id === activeTab)?.label || "Dashboard";
@@ -348,10 +358,8 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
         <main className="admin-content">
           {activeTab === "dashboard" && <Dashboard stats={stats} analytics={analytics} onRefresh={fetchStats} />}
           {activeTab === "monitor" && can("monitor") && <MonitorSection />}
-          {activeTab === "issue" && can("issue") && <IssueCertificate />}
-          {activeTab === "bulk" && can("bulk") && <BulkUpload />}
-          {activeTab === "verify" && can("verify") && <VerifySection />}
-          {activeTab === "list" && can("list") && <CertificatesList />}
+          {activeTab === "issue" && (can("issue") || can("bulk") || can("verify")) && <CertificateSection canSingle={can("issue")} canBulk={can("bulk")} canVerify={can("verify")} />}
+          {activeTab === "list" && can("list") && <CertificatesList canDownload={can("downloads")} />}
           {activeTab === "results" && can("results") && <ResultsSection />}
           {activeTab === "analytics" && can("analytics") && <AnalyticsSection />}
           {activeTab === "issues" && can("issues") && <IssuesSection />}
@@ -359,7 +367,6 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
           {activeTab === "activity" && <ActivityLog />}
           {activeTab === "users" && isAdmin && <UsersSection />}
           {activeTab === "settings" && isAdmin && <SettingsSection />}
-          {activeTab === "downloads" && can("downloads") && <DownloadsSection />}
         </main>
       </div>
     </div>
@@ -451,6 +458,50 @@ function Dashboard({ stats, analytics, onRefresh }: { stats: any; analytics: any
       )}
 
       </div>
+  );
+}
+
+function CertificateSection({ canSingle, canBulk, canVerify }: { canSingle: boolean; canBulk: boolean; canVerify: boolean }) {
+  const [mode, setMode] = useState<"single" | "bulk" | "verify">(canSingle ? "single" : canBulk ? "bulk" : "verify");
+  const available = (canSingle ? 1 : 0) + (canBulk ? 1 : 0) + (canVerify ? 1 : 0);
+  let active: React.ReactNode;
+  let toggle: React.ReactNode = null;
+  if (mode === "single" && canSingle) active = <IssueCertificate />;
+  else if (mode === "bulk" && canBulk) active = <BulkUpload />;
+  else if (mode === "verify" && canVerify) active = <VerifySection />;
+  else if (canSingle) active = <IssueCertificate />;
+  else if (canBulk) active = <BulkUpload />;
+  else if (canVerify) active = <VerifySection />;
+  else active = null;
+  if (available > 1) {
+    toggle = (
+      <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+        {canSingle && (
+          <button className={mode === "single" ? "btn-primary" : "btn-secondary"} onClick={() => setMode("single")}
+            style={{ flex: 1, padding: "8px 12px", cursor: "pointer", minWidth: "120px" }}>
+            📜 Single Issue
+          </button>
+        )}
+        {canBulk && (
+          <button className={mode === "bulk" ? "btn-primary" : "btn-secondary"} onClick={() => setMode("bulk")}
+            style={{ flex: 1, padding: "8px 12px", cursor: "pointer", minWidth: "120px" }}>
+            📦 Bulk Upload
+          </button>
+        )}
+        {canVerify && (
+          <button className={mode === "verify" ? "btn-primary" : "btn-secondary"} onClick={() => setMode("verify")}
+            style={{ flex: 1, padding: "8px 12px", cursor: "pointer", minWidth: "120px" }}>
+            ✅ Verify
+          </button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <>
+      {toggle}
+      {active}
+    </>
   );
 }
 
@@ -1702,7 +1753,7 @@ function SmsGatewayCard() {
   );
 }
 
-function CertificatesList() {
+function CertificatesList({ canDownload }: { canDownload?: boolean }) {
   const [certs, setCerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -1743,12 +1794,41 @@ function CertificatesList() {
   );
 
   const courses = [...new Set(certs.map(c => c.course).filter(Boolean))].sort();
+  const departments = [...new Set(certs.map(c => c.department).filter(Boolean))].sort();
+  const years = [...new Set(certs.map(c => c.year).filter(Boolean))].sort();
+  const [dlDept, setDlDept] = useState("");
+  const [dlYear, setDlYear] = useState("");
+  const dlQuery = new URLSearchParams();
+  if (dlDept) dlQuery.set("department", dlDept);
+  if (dlYear) dlQuery.set("year", dlYear);
+  const dlSuffix = dlQuery.toString();
+  const dlBase = `${API_BASE}/api/certificates/download${dlSuffix ? `?${dlSuffix}` : ""}`;
 
   return (
     <div className="section">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
         <h2 style={{ margin: 0, border: "none", padding: 0 }}>All Certificates</h2>
-        <button className="btn-secondary" onClick={load} style={{ padding: "6px 12px", fontSize: "12px" }}>Refresh</button>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+          {canDownload && (
+            <div className="download-section" style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+              <select value={dlDept} onChange={(e) => setDlDept(e.target.value)} style={{ padding: "6px", borderRadius: "6px", border: "1px solid var(--border)" }}>
+                <option value="">All Departments</option>
+                {departments.map((d, i) => <option key={i} value={d}>{d}</option>)}
+              </select>
+              <select value={dlYear} onChange={(e) => setDlYear(e.target.value)} style={{ padding: "6px", borderRadius: "6px", border: "1px solid var(--border)" }}>
+                <option value="">All Years</option>
+                {years.map((y, i) => <option key={i} value={y}>{y}</option>)}
+              </select>
+              <a className="btn-download" href={dlBase} target="_blank" rel="noreferrer">
+                Download CSV
+              </a>
+              <a className="btn-download btn-download-green" href={`${dlBase}${dlSuffix ? "&" : "?"}format=xlsx`} target="_blank" rel="noreferrer">
+                Download Excel
+              </a>
+            </div>
+          )}
+          <button className="btn-secondary" onClick={load} style={{ padding: "6px 12px", fontSize: "12px" }}>Refresh</button>
+        </div>
       </div>
 
       <div className="list-filters">
@@ -1902,22 +1982,6 @@ function VerifySection() {
   );
 }
 
-function DownloadsSection() {
-  return (
-    <div className="section">
-      <h2>Download Certificate List</h2>
-      <div className="download-section">
-        <a className="btn-download" href={`${API_BASE}/api/certificates/download`} target="_blank" rel="noreferrer">
-          Download CSV
-        </a>
-        <a className="btn-download btn-download-green" href={`${API_BASE}/api/certificates/download?format=xlsx`} target="_blank" rel="noreferrer">
-          Download Excel
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function ResultsSection() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
@@ -1982,6 +2046,29 @@ function ResultsSection() {
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
+
+  const downloadResults = () => {
+    if (results.length === 0) return alert("Nothing to download — no results match the current filters.");
+    const header = ["Roll Number", "Name", "Department", "Semester", "Subject", "Marks", "Max Marks", "Grade", "Percentage"];
+    const rows = results.flatMap((r: any) => {
+      const totalObtained = (r.subjects || []).reduce((s: any, x: any) => s + (Number(x.marks) || 0), 0);
+      const totalMax = (r.subjects || []).reduce((s: any, x: any) => s + (Number(x.maxMarks) || 0), 0);
+      const pct = totalMax ? Math.round((totalObtained / totalMax) * 100) : "";
+      const subs: any[] = Array.isArray(r.subjects) && r.subjects.length ? r.subjects : [{ subject: "", marks: "", maxMarks: "", grade: "" }];
+      return subs.map((x: any) => [r.rollNumber || "", r.name || "", r.department || "", r.semester || "", x.subject || "", x.marks ?? "", x.maxMarks ?? "", x.grade ?? "", pct]);
+    });
+    const csv = [header, ...rows].map((row: any) => row.map((cell: any) => {
+      const s = String(cell ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",")).join("\n");
+    const dept = filters.department && filters.department !== "__other__" ? `_${String(filters.department).replace(/[^\w]+/g, "-")}` : "";
+    const sem = filters.semester ? `_sem-${String(filters.semester).replace(/[^\w]+/g, "-")}` : "";
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `results${dept}${sem}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleBulkFile = async (e: any) => {
     const f = e.target.files[0];
@@ -2346,17 +2433,23 @@ function ResultsSection() {
       <div style={{ marginTop: "28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
           <h3 style={{ border: "none", padding: 0 }}>Results ({results.length})</h3>
-          <div className="list-filters" style={{ marginBottom: 0 }}>
-            <input type="text" placeholder="Search name / roll no" value={filters.q}
-              onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
-            <select value={filters.department} onChange={(e) => setFilters({ ...filters, department: e.target.value })}>
-              {!deptRestricted && <option value="">All departments</option>}
-              {visibleDepartments.map((d, i) => <option key={i} value={d}>{d}</option>)}
-            </select>
-            <select value={filters.semester} onChange={(e) => setFilters({ ...filters, semester: e.target.value })}>
-              <option value="">All semesters</option>
-              {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
-            </select>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div className="list-filters" style={{ marginBottom: 0 }}>
+              <input type="text" placeholder="Search name / roll no" value={filters.q}
+                onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+              <select value={filters.department} onChange={(e) => setFilters({ ...filters, department: e.target.value })}>
+                {!deptRestricted && <option value="">All departments</option>}
+                {visibleDepartments.map((d, i) => <option key={i} value={d}>{d}</option>)}
+              </select>
+              <select value={filters.semester} onChange={(e) => setFilters({ ...filters, semester: e.target.value })}>
+                <option value="">All semesters</option>
+                {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <button className="btn-secondary" onClick={downloadResults} title="Download the currently filtered results (department / semester) as CSV"
+              style={{ padding: "8px 12px", fontSize: "12px", whiteSpace: "nowrap", cursor: "pointer" }}>
+              ⬇️ Download CSV
+            </button>
           </div>
         </div>
 
