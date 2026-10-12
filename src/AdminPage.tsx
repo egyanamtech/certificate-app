@@ -227,6 +227,10 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
   if (!loggedIn) {
     return (
       <div className="page login-page">
+        <div className="login-grid" aria-hidden="true" />
+        <div className="login-orb login-orb--one" aria-hidden="true" />
+        <div className="login-orb login-orb--two" aria-hidden="true" />
+        <div className="login-waves" aria-hidden="true" />
         <div className="card login-form login-card">
           <button className="btn-back" onClick={onBack}>← Back</button>
           <div className="login-brand">
@@ -257,7 +261,7 @@ export default function AdminPage({ onBack }: { onBack: () => void }) {
             {loginBusy ? "Signing in…" : "Login"}
           </button>
           {loginError && <p className="login-error">{loginError}</p>}
-          <p className="login-foot">Secure admin access · {brand && brand.shortName ? brand.shortName : "Certificate Portal"}</p>
+          <p className="login-foot"><span className="login-shield-dot" aria-hidden="true" />Secure admin access · {brand && brand.shortName ? brand.shortName : "Certificate Portal"}</p>
         </div>
       </div>
     );
