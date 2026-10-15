@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>BIG Certificate Portal — Application Data Flow Report</title>
+<style>
+  @page { size: letter; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #0f172a;
+    font-size: 11.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #14172b; letter-spacing: -0.3px; }
+  .sub { font-size: 12px; color: #475569; margin: 0 0 2px; }
+  .meta { font-size: 10.5px; color: #64748b; margin: 0 0 18px; }
+  h2 {
+    font-size: 14px;
+    margin: 22px 0 10px;
+    padding-bottom: 6px;
+    color: #5b21b6;
+    border-bottom: 2px solid #ede9fe;
+  }
+  h3 { font-size: 12.5px; margin: 16px 0 6px; color: #1e293b; }
+  p { margin: 6px 0; }
+  pre.diagram {
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 9.6px;
+    line-height: 1.35;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #8b5cf6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #1e293b;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+  th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  th { background: #f1f5f9; color: #334155; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+  td code, code.inline {
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 9.8px;
+    background: #f1f5f9;
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: #6d28d9;
+  }
+  .callout {
+    border: 1px solid #ddd6fe;
+    background: #f5f3ff;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 10px 0;
+  }
+  .callout .tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: bold;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #6d28d9;
+    margin-bottom: 4px;
+  }
+  .note { font-size: 10.5px; color: #475569; }
+  ul { margin: 6px 0; padding-left: 18px; }
+  li { margin: 2px 0; }
+  .foot {
+    margin-top: 26px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9.5px;
+    color: #94a3b8;
+    text-align: center;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: bold;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #ede9fe;
+    color: #6d28d9;
+  }
+</style>
+</head>
+<body>
+
+<h1>BIG Certificate Portal — Application Data Flow Report</h1>
+<p class="sub">End-to-end movement of data: Browser → React SPA → Express API → PostgreSQL / IPFS / Sepolia</p>
+<p class="meta">Generated: 2026-09-30 · Source: /home/pradeep/certificate-app · Render: server.js (1970 lines) + src/ (React 19) · Revised: adds Domains &amp; Hosts Used + rationale</p>
+
+<h2>0. System Context &amp; Data Domains</h2>
+<table>
+  <thead>
+    <tr><th>Domain</th><th>Tables / Stores</th><th>External Integration</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Certificates</td><td><code>certificates</code>, <code>activity</code></td><td>IPFS (cid), Sepolia chain (txHash)</td></tr>
+    <tr><td>Results</td><td><code>results</code>, in-memory <code>otpStore</code> + <code>app_settings</code>(sms)</td><td>SMS gateway (otp)</td></tr>
+    <tr><td>Admin &amp; Auth</td><td><code>users</code>, <code>app_sessions</code>, <code>app_settings</code>, <code>brand</code>, <code>departments</code></td><td>—</td></tr>
+    <tr><td>Issues / Analytics</td><td><code>issues</code>, <code>activity</code></td><td>—</td></tr>
+    <tr><td>Campus Monitor</td><td><code>monitor_apps</code>, <code>monitor_checks</code>, <code>monitor_events</code></td><td>external apps POST <code>/api/agent/event</code></td></tr>
+    <tr><td>DPIA / Privacy</td><td><code>dpia_assessments</code>, <code>dpia_risks</code>, <code>dpia_workflow_config</code>, <code>dpia_audit_log</code></td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h2>0.1 Domains &amp; Hosts Used</h2>
+<p class="note">The portal is <strong>domain-agnostic</strong>: in production it is served same-origin and talks only to the hosts/endpoints listed below. Values reflect the current deployment (LAN hosts <code>.71</code> and <code>.85</code>). No secrets/tokens are listed.</p>
+
+<h3>A. Deployment &amp; Runtime Hosts (application domain)</h3>
+<table>
+  <thead>
+    <tr><th>Role</th><th>Domain / Host</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Production server (serves <code>build/</code>)</td><td><code>localhost:5000</code></td><td>Express, API + static SPA</td></tr>
+    <tr><td>CRA dev server</td><td><code>localhost:3000</code></td><td>React development only</td></tr>
+    <tr><td>Host <code>.71</code> (primary)</td><td><code>10.19.172.47:5000</code></td><td>node server, serves build</td></tr>
+    <tr><td>Host <code>.85</code> (secondary)</td><td><code>192.168.29.85:5000</code></td><td>PM2 app <code>cert-app</code> (auto-restart)</td></tr>
+    <tr><td>Database</td><td><code>localhost:5432</code></td><td>PostgreSQL 16 (local, per host)</td></tr>
+    <tr><td>Frontend API base</td><td><code>API_BASE = dev ? http://&lt;hostname&gt;:5000 : ""</code></td><td>Empty string ⇒ same-origin in production</td></tr>
+  </tbody>
+</table>
+
+<h3>B. External Service Domains (outbound integrations)</h3>
+<table>
+  <thead>
+    <tr><th>Purpose</th><th>Domain / Endpoint</th><th>Direction / Data</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>IPFS certificate file storage (Pinata)</td><td><code>uploads.pinata.cloud</code> (<code>/v3/files</code>) + IPFS network</td><td>Outbound: certificate blob → content-addressed <code>cid</code></td></tr>
+    <tr><td>Blockchain anchoring (Sepolia testnet JSON-RPC)</td><td><code>ethereum-sepolia.publicnode.com</code></td><td>Outbound: <code>addCertificate(hash,name,ipfsHash)</code> → <code>txHash</code></td></tr>
+    <tr><td>SMS provider (configurable)</td><td><code>www.fast2sms.com</code> · <code>control.msg91.com</code> · <code>api.textlocal.in</code></td><td>Outbound: OTP SMS (no student data beyond mobile + OTP)</td></tr>
+    <tr><td>Local SMS gateway (on-device)</td><td>App-configured phone URL on the LAN (Termux API, <code>com.termux.api</code>)</td><td>Outbound: OTP SMS via Android SIM</td></tr>
+    <tr><td>Monitored campus applications</td><td>Per-app URL configured in <em>Campus Monitor</em></td><td>Both: poll health; apps POST events with <code>x-monitor-token</code></td></tr>
+  </tbody>
+</table>
+
+<h3>C. Functional Data Domains (internal)</h3>
+<p class="note">Certificates · Results · Admin &amp; Auth · Issues / Analytics · Campus Monitor · DPIA / Privacy — see the table in Section 0 for their tables/stores. These are bounded contexts inside the single PostgreSQL database, not network domains.</p>
+
+<div class="callout">
+  <span class="tag">Thought / Rationale</span>
+  <p>The application deliberately has <strong>no single fixed web domain</strong>: it binds on <code>0.0.0.0:5000</code> and is reached over the LAN by IP (<code>10.19.172.47</code> / <code>192.168.29.85</code>) or via same-origin on whatever host serves it. That keeps the API surface behind one origin and avoids CORS exposure, and lets a university run it on intranet hosts before attaching a public DNS name.</p>
+  <p>All third-party traffic is <strong>explicit and narrow</strong>: certificate blobs go to Pinata/IPFS, hash anchors to the Sepolia RPC, and one-time passwords to a single configured SMS domain. Student personal data never leaves the local PostgreSQL instance; the public verify endpoint returns only a validity flag plus the CID.</p>
+  <p>For a production rollout the recommendation is to front the server with a real domain and TLS (e.g. <code>portal.&lt;university&gt;.edu</code> → reverse proxy → <code>:5000</code>), keep the DB and SMS gateway on the private network, and rotate the Pinata/Sepolia credentials. Until then, the IP-based hosts above are the authoritative “domains” in use.</p>
+</div>
+
+<h2>1. Admin Authentication Flow</h2>
+<pre class="diagram">Admin UI ──POST /api/admin/login──▶ Express
+   │ body: { username, password }
+   ├─▶ loginAttempts (in-memory Map, IP key) ── 429 if rate limit hit
+   ├─▶ SELECT * FROM users WHERE username = ?
+   ├─▶ verifyPass(): old sha256 OR scrypt (auto-migrate to scrypt on success)
+   ├─▶ createSession() → INSERT app_sessions → token
+   ├─▶ INSERT activity (ADMIN_LOGIN) + monitor_events (info)
+   └─▶ 200 { token, role, permissions[], departments[] } ──▶ localStorage admin_token / admin_user
+
+Every protected call: fetch('/api/...') + headers   x-admin-user   x-auth-token
+   requireAdmin ── isAdminRequest() ──▶ DB session lookup ──▶ 200 | 403 "Admin access required"
+   requirePerm('dpia'|'results'|'issues'|'monitor') ──▶ role admin OR permissions[] contains perm</pre>
+
+<h3>Domain users &amp; role mapping (<code>users</code> table)</h3>
+<p class="note">Which domain user gets which access — the login response carries <code>role</code>, <code>permissions[]</code> and <code>departments[]</code>, and every API call is authorized against them.</p>
+<table>
+  <thead>
+    <tr><th>Username</th><th>Role (domain)</th><th>Permissions[]</th><th>Departments[] (scope)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>admin</td><td><strong>admin</strong> — full access, bypasses perm checks</td><td>— (all)</td><td>— (all)</td></tr>
+    <tr><td>normal_user</td><td>user</td><td>issue, bulk, verify, list, activity, downloads</td><td>—</td></tr>
+    <tr><td>dept_head</td><td>department-head</td><td>list, results, verify, analytics, issues, activity</td><td>—</td></tr>
+    <tr><td>privacy_mgr</td><td>privacy-manager</td><td>verify, issues, activity, downloads</td><td>—</td></tr>
+    <tr><td>cybersec</td><td>cybersecurity</td><td>monitor, verify, issues, activity</td><td>—</td></tr>
+    <tr><td>Anupam</td><td>cybersecurity</td><td>monitor, verify, issues, activity, downloads, analytics, results</td><td>Computer Science</td></tr>
+    <tr><td>hr_office</td><td>hr</td><td>list, results, verify, downloads, activity</td><td>—</td></tr>
+    <tr><td>legal_team</td><td>legal</td><td>verify, issues, activity, downloads</td><td>—</td></tr>
+  </tbody>
+</table>
+<p class="note"><strong>Role domains</strong> (<code>ROLE_KEYS</code>): admin · user · department-head · privacy-manager · cybersecurity · hr · legal. Non-admin users are <em>department-scoped</em> via <code>getDeptScope()</code> — e.g. <code>Anupam</code> only sees Computer Science rows, while <code>admin</code> sees all departments.</p>
+
+<h2>2. Certificate Issuance Flow (admin)</h2>
+<pre class="diagram">1. AdminPage "Issue Certificate" form → collect student fields + file upload
+2. POST /upload (multer, in-memory) → temp file → compute sha256 = cert hash
+                                      │
+                                      ▼
+3. POST /api/certificates/blockchain { hash, name, ipfsHash }
+   contract.addCertificate(hash,name,ipfsHash) ──▶ Sepolia RPC
+          tx.wait()    ──▶ receipt.blockNumber        ──▶ return { txHash, blockNumber }
+                                      │
+                                      ▼
+4. POST /api/certificates          { hash, name, rollNumber, course, dept, year, email, ipfsHash, txHash }
+   INSERT INTO certificates ... ON CONFLICT(hash) DO UPDATE
+   INSERT activity (CERTIFICATE_ISSUED, onChain:!!txHash)
+                                      │
+                              ▼
+5. Dashboard "Certificates Issued (7d)" = COUNT certificates by date; QR renders cert hash
+
+Data stores crossed:
+  [fs] upload blob ──▶ [ipfs/Pinata] content-addressed cid ──▶ [chain] txHash
+  [db] certificates.hash UNIQUE ──▶ canonical record ──▶ [db] activity audit trail</pre>
+
+<h2>3. Certificate Verification Flow (public)</h2>
+<pre class="diagram">Visitor "Verify a Certificate" → /#verify
+   POST /api/certificates/blockchain? NO — read path:
+GET /api/verify/:hash
+  └─▶ SELECT hash, "ipfsHash" FROM certificates WHERE LOWER(hash)=$1
+  └─▶ 200 { valid:true, hash, ipfsHash } | { valid:false }
+  ✔ Frontend shows validity badge; stores only authoritative DB result (chain check optional via contract read)</pre>
+
+<h2>4. Certificate Search &amp; Download</h2>
+<pre class="diagram">GET /api/search?q=...   →   LOWER(hash|name|rollNumber|email) LIKE %q%   →   rows[]
+GET /api/certificates/download   →   build .xlsx (xlsx)   →   stream download
+GET /api/certificates   →   listCertificates()   →   table/export</pre>
+
+<h2>5. Bulk Certificate Upload</h2>
+<pre class="diagram">Admin "Bulk Upload" → choose .xlsx
+1. POST /api/certificates/bulk-upload (multer single)   →   parse workbook rows   →   { valid[], invalid[], summary }
+2. POST /api/certificates/bulk-save   →   for each valid row: INSERT ON CONFLICT DO UPDATE
+  →   INSERT activity (CERTIFICATE_BULK_IMPORTED)
+  →   return processed counts</pre>
+
+<h2>6. Results Publication &amp; Verification (OTP)</h2>
+<pre class="diagram">A) Publish: POST /api/result (requirePerm results) → INSERT results → activity
+B) Bulk: POST /api/results/bulk-upload → xlsx parse → POST /api/results/bulk-save → INSERT
+C) Verify (student): GET /api/results/verify (aadhaar+mobile) → aggregate semester rows
+D) OTP retry path:
+     POST /api/results/otp/request   →   gen 6-digit OTP → otpStore.set(roll,{hash,expires,attempts})
+         ──▶ hash OTP (sha256) ──▶ send SMS via configured gateway (sms-gateway.js)
+     POST /api/results/otp/verify   →   check sha256 match + TTL(5m) + attempts limit   →   allow view</pre>
+
+<h2>7. Issues Workflow</h2>
+<pre class="diagram">Students / staff: POST /api/issues     →    INSERT issues (open)
+Admin: GET /api/issues (requirePerm issues) → list
+Admin: DELETE /api/issues/:id → remove/resolve → INSERT activity
+Dashboard: counts open / resolved / rejected derived from issues.status</pre>
+
+<h2>8. Dashboard &amp; Analytics Flow</h2>
+<pre class="diagram">React Dashboard mount (fetch on load + Refresh button)
+GET /api/dashboard/stats        →   totals: certificates, issued-today, departments, results, issues
+GET /api/dashboard/analytics    →   series: certs/7d, dept-wise results, semester-wise results
+   └─▶ aggregate SQL (COUNT/GROUP BY) ──▶ JSON series ──▶ bars/tables in AdminPage</pre>
+
+<h2>9. Campus Monitor &amp; Agent Ingest</h2>
+<pre class="diagram">External campus app ── POST /api/agent/event    (x-monitor-token)
+   ├─▶ validate MONITOR_AGENT_TOKEN ── 403
+   ├─▶ look up monitor_apps by app_key (enabled) ── 404 if unknown
+   └─▶ insertMonitorEvent() → INSERT monitor_events
+Poll loop (every MONITOR_POLL_INTERVAL s):
+  pollMonitoredApps() → fetch app endpoints → HTTP ok/fail → INSERT monitor_checks
+   GET /api/monitor/apps → status table; GET /api/monitor/stats → uptime aggregates
+Admin CRUD: POST/PUT/DELETE /api/monitor/apps(:id) → monitor_apps (incl. ROPA/DPIA/DPDP fields)</pre>
+
+<h2>10. DPIA Module Data Flow <span class="badge">core deliverable</span></h2>
+<pre class="diagram">CREATE DPIA    POST /api/dpia (requirePerm dpia)
+   validate title → map stage/status via workflow config → INSERT dpia_assessments
+  → dpiaAudit('created') ; for each risk → INSERT dpia_risks → dpiaAudit('risk_added')
+
+ADD RISK       POST /api/dpia/:id/risk          → INSERT dpia_risks (+ audit)
+EDIT RISK      PUT   /api/dpia/risk/:riskId     → UPDATE dpia_risks (open→resolved, remediation)
+
+WORKFLOW MVP   POST /api/dpia/:id/transition { to, comment }
+  load dpia_workflow_config.stages/transitions
+  validate allowed from→to transition (edge rules: requireAdmin / requireComment)
+      └─▶ on 'admin' transition ✓ → UPDATE stage+status (dpiaStageToStatus)
+  → dpiaAudit(action: created|approved|rejected|stage_changed)
+  → INSERT activity (DPIA_APPROVED/DPIA_REJECTED/DPIA_STAGE_CHANGED)
+
+DASHBOARD      GET /api/dpia/dashboard    (requireAdmin)
+  └─▶ aggregate queries:
+         totalDpias = COUNT(dpia_assessments)
+         completed / open = GROUP BY status
+         highRisk = COUNT high|critical
+         openRisks   = COUNT dpia_risks status='open'
+         overdue     = COUNT open AND due_date &lt; now()
+         thirdParty  = COUNT third_party=true
+         byUnit table = GROUP BY business_unit, status
+         dataCategories = unnest JSONB data_categories
+         riskBreakdown = COUNT risks by level/status
+
+REPORT         GET /api/dpia/report   (requireAdmin)     [route ABOVE /api/dpia/:id]
+  └─▶ pure-text executive summary (same aggregates, formatted) → text/plain
+        consumed by View Report (blob tab) &amp; Export Report (.txt download)
+READ/WRITE     GET /api/dpia (list) · GET /api/dpia/:id (detail incl. risks)
+  PUT /api/dpia/:id    ·   DELETE /api/dpia/:id (cascade dpia_risks via FK)
+
+DPIA dashboard feed (verified values on both hosts .71/.85):
+ Total:14 · Completed 4/Open 10 · High-risk 6 · Open risks 13 · Overdue 0 · Third-party 7 · Categories 12</pre>
+
+<h2>11. Settings, Brand, Users, Departments, Activity</h2>
+<pre class="diagram">Brand: GET/PUT /api/brand → brand table → logo/colors render site-wide
+SMS:   GET/PUT /api/settings/sms → app_settings; POST /api/settings/sms/test
+Users: GET/POST /api/users, PUT/DELETE /api/users/:username (permissions[] JSONB, departments[] JSONB)
+Depts: GET/POST /api/departments, DELETE /api/departments/:name
+Activity: GET /api/activity → audit view; DELETE /api/activity (clear, requireAdmin)</pre>
+
+<h2>12. Frontend (SPA) Data Flow</h2>
+<pre class="diagram">App.js: window.location.hash → page state (home | verify | result | admin)
+AdminPage.js (3681 lines): 13 modules, each mounts → fetch(`${API_BASE}/api/...`, { headers: authHeaders() })
+    API_BASE = dev ? `http://${hostname}:5000` : "" (same-origin)
+   authHeaders() = { 'x-admin-user': admin_user, 'x-auth-token': admin_token } ← localStorage
+Login stores admin_user/admin_token; logout clears them
+View Report: fetch('/api/dpia/report', headers) → blob → window.open(URL.createObjectURL(blob))
+Export:           fetch(..., headers) → blob → a[download].click() + revokeObjectURL</pre>
+
+<h2>13. Deployment &amp; Cross-Host Data Flow</h2>
+<pre class="diagram">Host .71  : npm start (:3000 dev)          +   node server.js (:5000 prod, serves build/)
+Host .85  : PM2 app "cert-app" (auto-restart) node server.js :5000
+Both write to local PostgreSQL 16 (db.js recreates schema on boot if missing)
+Sync path used 2026-09-30: rsync code+src+build → npm build → pg_dump .71 → pg_restore .85 (dpia_* added)
+Report route fix deployed on both hosts; View Report verified end-to-end (blob tab opens)
+
+Domains in play:  10.19.172.47:5000 (.71)   ·   192.168.29.85:5000 (.85)   ·   localhost:5432 (DB)</pre>
+
+<h2>14. Failure &amp; Safety Properties</h2>
+<pre class="diagram">Schema idempotency: CREATE TABLE IF NOT EXISTS + ALTER TABLE ADD COLUMN IF NOT EXISTS + guards make restarts safe.
+DPIA FK cascade: deleting a DPIA removes its risks and audit rows via ON DELETE CASCADE.
+Login throttling: in-memory per-IP attempt window → 429 lockout (15 min); OTP stored hashed (sha256) with 5-min TTL and attempt cap.
+Route-order rule: static DPIA subroutes (report, workflow, dashboard) are registered before /api/dpia/:id.
+RBAC: roles (admin, dept-head, privacy-manager, cybersecurity, hr, legal) + per-permission gates on DPIA/results/issues/monitor.
+Agent security: monitor events require x-monitor-token and a registered, enabled app_key.</pre>
+
+<div class="foot">BIG Certificate Portal · Application Data Flow Report · 2026-09-30 · Confidential — internal engineering use.</div>
+
+</body>
+</html>
